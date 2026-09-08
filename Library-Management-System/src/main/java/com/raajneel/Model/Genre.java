@@ -1,5 +1,6 @@
 package com.raajneel.Model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.raajneel.LibraryManagementSystemApplication;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -46,8 +47,9 @@ public class Genre {
     @OneToMany(mappedBy = "parentGenre", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Genre> subGenres = new ArrayList<Genre>();
 
-    // @OneToMany(mappedBy = "genre", cascade = CascadeType.PERSIST)
-    //private List<Book> books = new ArrayList<Book>();
+    @OneToMany(mappedBy = "genre", cascade = CascadeType.PERSIST)
+    @JsonManagedReference("genre-books")
+    private List<Book> books = new ArrayList<Book>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
