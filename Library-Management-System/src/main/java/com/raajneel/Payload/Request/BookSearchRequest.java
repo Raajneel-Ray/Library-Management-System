@@ -1,12 +1,12 @@
 package com.raajneel.Payload.Request;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class BookSearchRequest {
 
     private String searchTerm;
