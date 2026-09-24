@@ -1,16 +1,12 @@
 package com.raajneel.Model;
 import com.raajneel.Domain.AuthProvider;
 import com.raajneel.Domain.UserRole;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-
 
 @Entity
 @Getter
@@ -23,17 +19,25 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String fullName;
 
-    private UserRole role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private UserRole role = UserRole.ROLE_USER;
 
-    private String Phone;
+    private String phone;
 
-    private AuthProvider authProvider= AuthProvider.LOCAL;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     private String googleId;
 

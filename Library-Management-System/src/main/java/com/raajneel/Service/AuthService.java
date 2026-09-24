@@ -12,5 +12,5 @@ public interface AuthService {
 
     void createPasswordResetToken(String email) throws UserException;
 
-    void resetPassword(String token, String newPassword) throws Exception;
+    void resetPassword(String token, String newPassword) throws UserException;
 }

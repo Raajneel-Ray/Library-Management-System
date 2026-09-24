@@ -27,23 +27,23 @@ public class JwtValidator extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String jwt = request.getHeader(JwtConstant.JWT_HEADER); // get the jwt token from header
 
-        if(jwt != null) {
-            jwt = jwt.substring(7); // token will come with 'Bearer bjshbxjhsbj' hence remove it
+        if(jwt != null && jwt.startsWith("Bearer ")) {
+            jwt = jwt.substring(7);
 
             try {
                 SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
                 Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
                 String email = String.valueOf(claims.get("email"));
                 String authorities = String.valueOf(claims.get("authorities"));
-                List< GrantedAuthority> authoritiesList = AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
+                List<GrantedAuthority> authoritiesList = AuthorityUtils.commaSeparatedStringToAuthorityList(authorities);
                 Authentication authentication = new UsernamePasswordAuthenticationToken(email,
                         null, authoritiesList);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                throw new BadCredentialsException("Invalid JWT token");
+                SecurityContextHolder.clearContext();
             }
         }
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
 
     }
 }

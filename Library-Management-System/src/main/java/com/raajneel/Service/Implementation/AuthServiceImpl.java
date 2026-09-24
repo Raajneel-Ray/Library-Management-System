@@ -1,6 +1,7 @@
 package com.raajneel.Service.Implementation;
 
 import com.raajneel.Configuration.JwtProvider;
+import com.raajneel.Domain.UserRole;
 import com.raajneel.Exception.UserException;
 import com.raajneel.Mapper.UserMapper;
 import com.raajneel.Model.PasswordResetToken;
@@ -11,19 +12,20 @@ import com.raajneel.Repository.PasswordResetTokenRepository;
 import com.raajneel.Repository.UserRepository;
 import com.raajneel.Service.AuthService;
 import jakarta.transaction.Transactional;
-import jdk.jshell.spi.ExecutionControl;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -35,7 +37,6 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProvider jwtProvider;
     private final UserMapper userMapper;
     private final CustomUserServiceImpl customUserServiceImpl;
-    // private final AuthenticationManager authenticationManager;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailServiceImpl emailServiceImpl;
 
@@ -60,15 +61,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Authentication authenticate(String username, String password) throws UserException {
-        UserDetails userDetails = customUserServiceImpl.loadUserByUsername(username);
-        if(userDetails==null) {
-            throw new UserException("User not found with email - " + password);
+        try {
+            UserDetails userDetails = customUserServiceImpl.loadUserByUsername(username);
+            if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+                throw new UserException("Invalid email or password");
+            }
+            return new UsernamePasswordAuthenticationToken(
+                    username, null, userDetails.getAuthorities());
+        } catch (UsernameNotFoundException e) {
+            throw new UserException("Invalid email or password");
         }
-        if(!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new UserException("Wrong password");
-        }
-        return new UsernamePasswordAuthenticationToken(
-                username, null, userDetails.getAuthorities());
     }
 
     @Override
@@ -82,13 +84,17 @@ public class AuthServiceImpl implements AuthService {
         newUser.setEmail(req.getEmail());
         newUser.setPassword(passwordEncoder.encode(req.getPassword()));
         newUser.setFullName(req.getFullName());
-        newUser.setRole(req.getRole());
+        newUser.setRole(UserRole.ROLE_USER);
         newUser.setPhone(req.getPhone());
-        newUser.setLastLogin(req.getLastLogin());
+        newUser.setLastLogin(LocalDateTime.now());
 
         User savedUser = userRepository.save(newUser);
+
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(savedUser.getRole().name())
+        );
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                savedUser.getEmail(), savedUser.getPassword());
+                savedUser.getEmail(), null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = jwtProvider.generateToken(authentication);
@@ -103,10 +109,15 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void createPasswordResetToken(String email) throws UserException {
         User user = userRepository.findByEmail(email);
-        String frontendURL = "";
         if(user == null) {
-            throw new UserException("User not found with given email");
+            // Anti-enumeration: do not reveal whether user exists
+            return;
         }
+
+        // Invalidate previous reset tokens for this user
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String frontendURL = "";
         String token = UUID.randomUUID().toString();
 
         PasswordResetToken resetToken = PasswordResetToken.builder()
@@ -121,17 +132,20 @@ public class AuthServiceImpl implements AuthService {
 
         // sent email
         emailServiceImpl.sendEmail(user.getEmail(), subject, body);
-
     }
 
-    @Transactional
-    public void resetPassword(String token, String newPassword) throws Exception {
+    @Transactional(rollbackOn = Exception.class)
+    public void resetPassword(String token, String newPassword) throws UserException {
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new UserException("Password must be at least 6 characters long");
+        }
+
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(()->new Exception("Token not valid"));
+                .orElseThrow(() -> new UserException("Invalid or expired password reset token"));
 
         if(resetToken.isExpired()) {
             passwordResetTokenRepository.delete(resetToken);
-            throw new Exception("Token has expired");
+            throw new UserException("Password reset token has expired");
         }
 
         User user = resetToken.getUser();

@@ -48,8 +48,8 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse> resetPasswordHandler(
-            @RequestBody @Valid ResetPasswordRequest req) throws Exception {
-        authService.resetPassword(req.getToken(),req.getNewPassword());
+            @RequestBody @Valid ResetPasswordRequest req) throws UserException {
+        authService.resetPassword(req.getToken(), req.getNewPassword());
         ApiResponse response = new ApiResponse(
                 "Password reset successful", true);
         return ResponseEntity.ok(response);
