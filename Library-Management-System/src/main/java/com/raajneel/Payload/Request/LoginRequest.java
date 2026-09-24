@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginRequest {
     @NotNull(message = "username or email is required")
-    private String username;
+    private String email;
     @NotNull(message = "password is required")
     private String password;
 }

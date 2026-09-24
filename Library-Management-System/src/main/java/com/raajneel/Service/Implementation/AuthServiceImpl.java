@@ -35,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProvider jwtProvider;
     private final UserMapper userMapper;
     private final CustomUserServiceImpl customUserServiceImpl;
-    private final AuthenticationManager authenticationManager;
+    // private final AuthenticationManager authenticationManager;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailServiceImpl emailServiceImpl;
 

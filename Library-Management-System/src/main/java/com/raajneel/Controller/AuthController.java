@@ -33,7 +33,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> loginHandler(
             @RequestBody @Valid LoginRequest req) throws UserException {
-        AuthResponse response = authService.login(req.getUsername(), req.getPassword());
+        AuthResponse response = authService.login(req.getEmail(), req.getPassword());
         return ResponseEntity.ok(response);
     }
 
