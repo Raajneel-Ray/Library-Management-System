@@ -35,11 +35,11 @@ public class SubscriptionPlanDTO {
     private Long price;
     private String currency;
 
-    @NotBlank(message = "Max books allowed is mandatory")
+    @NotNull(message = "Max books allowed is mandatory")
     @Positive(message = "Max Books to be allowed must be positive")
     private Integer maximumBooksAllowed;
 
-    @NotBlank(message = "Max Days per book is mandatory")
+    @NotNull(message = "Max Days per book is mandatory")
     @Positive(message = "Max Days must be positive")
     private Integer maxDaysPerBook;
 
