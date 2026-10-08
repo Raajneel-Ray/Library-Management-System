@@ -7,11 +7,8 @@ import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.SubscriptionDTO;
 import com.raajneel.Repository.SubscriptionPlanRepository;
 import com.raajneel.Repository.UserRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -25,6 +22,7 @@ import java.util.stream.Collectors;
 public class SubscriptionMapper {
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final UserService userService;
 
     // convert Subscription entity to DTO
     public SubscriptionDTO toDTO(Subscription subscription) {
@@ -86,20 +84,17 @@ public class SubscriptionMapper {
         return dto;
     }
 
-    public Subscription toEntity(SubscriptionDTO dto) throws SubscriptionException {
+    public Subscription toEntity(SubscriptionDTO dto, SubscriptionPlan plan, User user) throws Exception {
         if(dto == null) {
             return null;
         }
-        User user = null;
-        if(dto.getUserId() != null) {
-            user = userRepository.findById(dto.getUserId())
-                    .orElseThrow(() -> new SubscriptionException("User not found with id " + dto.getUserId()));
-        }
-        SubscriptionPlan plan = null;
-        if (dto.getPlanId() != null) {
-            plan = subscriptionPlanRepository.findById(dto.getPlanId())
-                    .orElseThrow(() -> new SubscriptionException("Plan not found with ID: " + dto.getPlanId()));
-        }
+        user = userService.getCurrentUser();
+//        if(dto.getUserId() != null) {
+//            user = userRepository.findById(dto.getUserId())
+//                    .orElseThrow(() -> new SubscriptionException("User not found with id " + dto.getUserId()));
+//        }
+
+
         Subscription subscription = Subscription.builder()
                 .id(dto.getId())
                 .user(user)

@@ -2,8 +2,8 @@ package com.raajneel.Service;
 
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Payload.DTO.SubscriptionDTO;
+import org.springframework.data.domain.Pageable;
 
-import java.awt.print.Pageable;
 import java.util.List;
 
 public interface SubscriptionService {

@@ -13,13 +13,12 @@ import com.raajneel.Repository.UserRepository;
 import com.raajneel.Service.SubscriptionService;
 import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +32,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     public SubscriptionDTO subscribe(SubscriptionDTO subscriptionDTO) throws Exception {
-        Subscription subscription = subscriptionMapper.toEntity(subscriptionDTO);
+        User user = userService.getCurrentUser();
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionDTO.getPlanId())
+                .orElseThrow(() -> new SubscriptionException("Plan not found with ID: " + subscriptionDTO.getPlanId()));
+        Subscription subscription = subscriptionMapper.toEntity(subscriptionDTO, plan, user);
         subscription.setIsActive(false); // only activate after payment is up
         Subscription savedSubscription =  subscriptionRepository.save(subscription);
 

@@ -6,7 +6,10 @@ import com.raajneel.Repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
@@ -18,6 +21,18 @@ public class GenreMapper {
         if(savedGenre == null) {
             return null;
         }
+        Map<Long, Long> bookCountMap = getBookCountMap();
+        return toDTO(savedGenre, bookCountMap);
+    }
+
+    public GenreDTO toDTO(Genre savedGenre, Map<Long, Long> bookCountMap) {
+        if(savedGenre == null) {
+            return null;
+        }
+        Long count = (bookCountMap != null && savedGenre.getId() != null)
+                ? bookCountMap.getOrDefault(savedGenre.getId(), 0L)
+                : (savedGenre.getId() != null ? genreRepository.countBooksByGenre(savedGenre.getId()) : 0L);
+
         GenreDTO dto = GenreDTO.builder()
                 .id(savedGenre.getId())
                 .code(savedGenre.getCode())
@@ -25,6 +40,7 @@ public class GenreMapper {
                 .description(savedGenre.getDescription())
                 .displayOrder(savedGenre.getDisplayOrder())
                 .active(savedGenre.isActive())
+                .bookCount(count)
                 .createdAt(savedGenre.getCreatedAt())
                 .updatedAt(savedGenre.getUpdatedAt())
                 .build();
@@ -35,7 +51,7 @@ public class GenreMapper {
         if(savedGenre.getSubGenres()!=null && !savedGenre.getSubGenres().isEmpty()) {
             dto.setSubGenre(savedGenre.getSubGenres().stream()
                     .filter(subGenre -> subGenre.isActive())
-                    .map(subGenre -> toDTO(subGenre))
+                    .map(subGenre -> toDTO(subGenre, bookCountMap))
                     .collect(Collectors.toList()));
         }
         return dto;
@@ -77,8 +93,27 @@ public class GenreMapper {
     }
 
     public List<GenreDTO> toDTOList(List<Genre> genreList) {
-        return  genreList.stream()
-                .map(genre -> toDTO(genre))
+        if (genreList == null || genreList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<Long, Long> bookCountMap = getBookCountMap();
+        return genreList.stream()
+                .map(genre -> toDTO(genre, bookCountMap))
                 .collect(Collectors.toList());
+    }
+
+    public Map<Long, Long> getBookCountMap() {
+        List<Object[]> results = genreRepository.countBooksGroupedByGenre();
+        Map<Long, Long> map = new HashMap<>();
+        if (results != null) {
+            for (Object[] row : results) {
+                if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                    Long genreId = ((Number) row[0]).longValue();
+                    Long count = ((Number) row[1]).longValue();
+                    map.put(genreId, count);
+                }
+            }
+        }
+        return map;
     }
 }

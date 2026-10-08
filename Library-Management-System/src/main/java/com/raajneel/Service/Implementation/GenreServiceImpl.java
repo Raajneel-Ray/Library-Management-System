@@ -28,9 +28,8 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     public List<GenreDTO> getAllGenres() {
-        return genreRepository.findAll().stream()
-                .map(genre-> genreMapper.toDTO(genre))
-                .collect(Collectors.toList());
+        List<Genre> genres = genreRepository.findAll();
+        return genreMapper.toDTOList(genres);
     }
 
     @Override
@@ -90,6 +89,6 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     public long getBookCountByGenre(Long genreId) {
-        return 0;
+        return genreRepository.countBooksByGenre(genreId);
     }
 }

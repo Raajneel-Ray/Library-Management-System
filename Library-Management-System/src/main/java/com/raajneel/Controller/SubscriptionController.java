@@ -22,7 +22,7 @@ public class SubscriptionController {
 
     @PostMapping("/subscribe")
     public ResponseEntity<?> subscribe(
-            @Valid @RequestBody SubscriptionDTO subscriptionDTO
+            @RequestBody SubscriptionDTO subscriptionDTO
     ) throws Exception {
         SubscriptionDTO dto = subscriptionService.subscribe(subscriptionDTO);
         return ResponseEntity.ok().body(dto);
@@ -30,7 +30,7 @@ public class SubscriptionController {
 
     @GetMapping("/admin")
     public ResponseEntity<?> getAllSubscriptions() {
-        Pageable pageable = (Pageable) PageRequest.of(0, 10);
+        org.springframework.data.domain.Pageable pageable = (org.springframework.data.domain.Pageable) PageRequest.of(0, 10);
         List<SubscriptionDTO> list = subscriptionService.getAllSubscription(pageable);
         return ResponseEntity.ok().body(list);
     }

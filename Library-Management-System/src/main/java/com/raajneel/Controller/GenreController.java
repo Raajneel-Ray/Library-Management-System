@@ -74,4 +74,10 @@ public class GenreController {
         Long genres = genreService.getTotalActiveGenres();
         return ResponseEntity.ok(genres);
     }
+
+    @GetMapping("/{genreId}/books/count")
+    public ResponseEntity<Long> getBookCountByGenre(@PathVariable Long genreId) {
+        long count = genreService.getBookCountByGenre(genreId);
+        return ResponseEntity.ok(count);
+    }
 }
