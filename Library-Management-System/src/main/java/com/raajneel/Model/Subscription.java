@@ -71,7 +71,7 @@ public class Subscription {
     private LocalDateTime updatedAt;
 
     public boolean isValid() {
-        if (Boolean.FALSE.equals(isActive)) {
+        if (!Boolean.TRUE.equals(isActive)) {
             return false;
         }
         if (startDate == null || endDate == null) {

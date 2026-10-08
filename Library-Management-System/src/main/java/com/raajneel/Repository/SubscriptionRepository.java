@@ -22,6 +22,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             );
 
     @Query("select s from Subscription s where s.isActive = true"
-            + " and s.endDate<=:today")
+            + " and s.endDate<:today")
     List<Subscription> findExpiredActiveSubscription(@Param("today")LocalDate today);
 }
