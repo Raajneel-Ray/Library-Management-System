@@ -15,4 +15,5 @@ public interface SubscriptionPlanService {
 
     List<SubscriptionPlanDTO> getAllSubscriptionPlan();
 
+    List<SubscriptionPlanDTO> getFeaturedSubscriptionPlans();
 }

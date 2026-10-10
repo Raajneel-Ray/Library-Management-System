@@ -36,14 +36,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         User user = userService.getCurrentUser();
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionDTO.getPlanId())
                 .orElseThrow(() -> new SubscriptionException("Plan not found with ID: " + subscriptionDTO.getPlanId()));
+        if (!Boolean.TRUE.equals(plan.getIsFeatured())) {
+            throw new SubscriptionException("Subscription plan is not accessible for subscription until it is featured");
+        }
+
+        if (!Boolean.TRUE.equals(plan.getIsActive())) {
+            throw new SubscriptionException("Subscription plan is not active");
+        }
+
         Subscription subscription = subscriptionMapper.toEntity(subscriptionDTO, plan, user);
         subscription.setIsActive(false); // only activate after payment is up
         Subscription savedSubscription =  subscriptionRepository.save(subscription);
 
         // create payment todo
         // todo prevention of duplicate subscription request
-        // todo subscribe() does not verify whether plan.getIsActive() is true.
-        //  Archived or disabled plans can still be purchased.
         return subscriptionMapper.toDTO(savedSubscription);
     }
 

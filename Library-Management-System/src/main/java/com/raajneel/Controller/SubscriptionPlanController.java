@@ -31,6 +31,12 @@ public class SubscriptionPlanController {
         return ResponseEntity.ok(subscriptionPlans);
     }
 
+    @GetMapping("/featured")
+    public ResponseEntity<?> getFeaturedSubscriptionPlans() {
+        List<SubscriptionPlanDTO> subscriptionPlans = subscriptionPlanService.getFeaturedSubscriptionPlans();
+        return ResponseEntity.ok(subscriptionPlans);
+    }
+
     @PostMapping("/admin/create")
     public ResponseEntity<?> createSubscriptionPlan(
             @RequestBody @Valid SubscriptionPlanDTO subscriptionPlanDTO) throws SubscriptionPlanException, Exception {
@@ -45,7 +51,7 @@ public class SubscriptionPlanController {
         return ResponseEntity.ok(updatedPlan);
     }
 
-    @DeleteMapping("/admin/delete/{id}")
+    @DeleteMapping("/admin/delete/{planId}")
     public ResponseEntity<?> deleteSubscriptionPlan(
             @PathVariable Long planId) throws SubscriptionPlanException, Exception {
         subscriptionPlanService.deleteSubscriptionPlan(planId);

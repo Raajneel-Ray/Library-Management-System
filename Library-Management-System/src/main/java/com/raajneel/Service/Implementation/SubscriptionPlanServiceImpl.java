@@ -1,5 +1,6 @@
 package com.raajneel.Service.Implementation;
 
+import com.raajneel.Domain.UserRole;
 import com.raajneel.Exception.SubscriptionPlanException;
 import com.raajneel.Mapper.SubscriptionPlanMapper;
 import com.raajneel.Model.SubscriptionPlan;
@@ -61,11 +62,30 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     }
 
     @Override
-    public List<SubscriptionPlanDTO> getAllSubscriptionPlan() {
-        List<SubscriptionPlan> subscriptionPlans = subscriptionPlanRepository.findAll();
+    public List<SubscriptionPlanDTO> getFeaturedSubscriptionPlans() {
+        List<SubscriptionPlan> subscriptionPlans = subscriptionPlanRepository.findByIsActiveTrueAndIsFeaturedTrue();
         return subscriptionPlans
                 .stream()
                 .map(subscriptionPlanMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SubscriptionPlanDTO> getAllSubscriptionPlan() {
+        User currentUser = null;
+        try {
+            currentUser = userService.getCurrentUser();
+        } catch (Exception ignored) {
+        }
+
+        if (currentUser != null && currentUser.getRole() == UserRole.ROLE_ADMIN) {
+            List<SubscriptionPlan> subscriptionPlans = subscriptionPlanRepository.findAll();
+            return subscriptionPlans
+                    .stream()
+                    .map(subscriptionPlanMapper::toDTO)
+                    .collect(Collectors.toList());
+        }
+
+        return getFeaturedSubscriptionPlans();
     }
 }
