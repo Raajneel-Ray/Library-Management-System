@@ -30,6 +30,18 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse(e.getMessage(), false));
     }
 
+    @ExceptionHandler(SubscriptionException.class)
+    public ResponseEntity<ApiResponse> handleSubscriptionException(SubscriptionException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(e.getMessage(), false));
+    }
+
+    @ExceptionHandler(SubscriptionPlanException.class)
+    public ResponseEntity<ApiResponse> handleSubscriptionPlanException(SubscriptionPlanException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(e.getMessage(), false));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse> handleBadCredentialsException(BadCredentialsException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

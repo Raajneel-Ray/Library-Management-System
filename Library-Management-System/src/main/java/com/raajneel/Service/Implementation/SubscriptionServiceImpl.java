@@ -1,5 +1,6 @@
 package com.raajneel.Service.Implementation;
 
+import com.raajneel.Domain.UserRole;
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Exception.UserException;
 import com.raajneel.Mapper.SubscriptionMapper;
@@ -48,27 +49,45 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     public SubscriptionDTO getUsersActiveSubscription(Long userId) throws Exception {
-        User user = userRepository.findById(userId)
+        User currentUser = userService.getCurrentUser();
+        Long targetUserId = (userId != null) ? userId : currentUser.getId();
+
+        boolean isSelf = targetUserId.equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == UserRole.ROLE_ADMIN;
+
+        if (!isSelf && !isAdmin) {
+            throw new SubscriptionException("You do not have permission to view this subscription");
+        }
+
+        User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new UserException("User not found"));
         Subscription subscription = subscriptionRepository
                 .findActiveSubscriptionByUserId(user.getId(), LocalDate.now())
-                .orElseThrow(()-> new SubscriptionException("Active Subscription Not Found"));
+                .orElseThrow(() -> new SubscriptionException("Active Subscription Not Found"));
         return subscriptionMapper.toDTO(subscription);
     }
 
     @Override
-    public SubscriptionDTO cancelSubscription(Long subscriptionId, String reason) throws SubscriptionException {
+    public SubscriptionDTO cancelSubscription(Long subscriptionId, String reason) throws Exception {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(()->new SubscriptionException("Subscription Not found with id : " + subscriptionId ));
+                .orElseThrow(() -> new SubscriptionException("Subscription Not found with id : " + subscriptionId));
 
-        if(!subscription.getIsActive()) {
+        User currentUser = userService.getCurrentUser();
+        boolean isOwner = subscription.getUser() != null && subscription.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == UserRole.ROLE_ADMIN;
+
+        if (!isOwner && !isAdmin) {
+            throw new SubscriptionException("You do not have permission to cancel this subscription");
+        }
+
+        if (!subscription.getIsActive()) {
             throw new SubscriptionException("Subscription Not Active");
         }
 
         // mark as canceled
         subscription.setIsActive(false);
         subscription.setCancelledAt(LocalDateTime.now());
-        subscription.setCancellationReason(reason!=null ? reason : "Cancelled By User");
+        subscription.setCancellationReason(reason != null ? reason : (isAdmin && !isOwner ? "Cancelled By Admin" : "Cancelled By User"));
         subscription = subscriptionRepository.save(subscription);
 
         return subscriptionMapper.toDTO(subscription);

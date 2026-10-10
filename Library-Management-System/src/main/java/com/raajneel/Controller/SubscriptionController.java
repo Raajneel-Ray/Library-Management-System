@@ -36,7 +36,7 @@ public class SubscriptionController {
     }
 
     @GetMapping("/user/active-subscriptions")
-    public ResponseEntity<?> getUsersActiveSubscription(@RequestParam Long userId) throws Exception {
+    public ResponseEntity<?> getUsersActiveSubscription(@RequestParam(required = false) Long userId) throws Exception {
         SubscriptionDTO dto = subscriptionService.getUsersActiveSubscription(userId);
         return ResponseEntity.ok(dto);
     }

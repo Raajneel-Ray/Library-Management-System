@@ -12,7 +12,7 @@ public interface SubscriptionService {
 
     SubscriptionDTO getUsersActiveSubscription(Long userId) throws Exception;
 
-    SubscriptionDTO cancelSubscription(Long subscriptionId, String reason) throws SubscriptionException;
+    SubscriptionDTO cancelSubscription(Long subscriptionId, String reason) throws Exception;
 
     SubscriptionDTO activateSubscription(Long subscriptionId, Long paymentId) throws SubscriptionException;
 
