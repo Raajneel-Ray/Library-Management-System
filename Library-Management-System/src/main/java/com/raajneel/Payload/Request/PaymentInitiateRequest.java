@@ -33,7 +33,7 @@ public class PaymentInitiateRequest {
     @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
 
-    private  Long findId;
+    private  Long fineId;
 
     private Long subscriptionId;
 

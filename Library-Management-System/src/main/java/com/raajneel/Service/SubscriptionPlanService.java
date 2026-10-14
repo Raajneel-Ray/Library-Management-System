@@ -1,6 +1,7 @@
 package com.raajneel.Service;
 
 import com.raajneel.Exception.SubscriptionPlanException;
+import com.raajneel.Model.SubscriptionPlan;
 import com.raajneel.Payload.DTO.SubscriptionPlanDTO;
 
 import java.util.List;
@@ -16,4 +17,6 @@ public interface SubscriptionPlanService {
     List<SubscriptionPlanDTO> getAllSubscriptionPlan();
 
     List<SubscriptionPlanDTO> getFeaturedSubscriptionPlans();
+
+    SubscriptionPlan getBySubscriptionPlanCode(String subscriptionPlanCode) throws Exception;
 }
