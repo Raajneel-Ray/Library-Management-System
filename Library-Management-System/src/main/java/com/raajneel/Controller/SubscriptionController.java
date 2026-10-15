@@ -3,6 +3,7 @@ package com.raajneel.Controller;
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Payload.DTO.SubscriptionDTO;
 import com.raajneel.Payload.Response.ApiResponse;
+import com.raajneel.Payload.Response.PaymentInitiateResponse;
 import com.raajneel.Service.SubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class SubscriptionController {
     public ResponseEntity<?> subscribe(
             @RequestBody SubscriptionDTO subscriptionDTO
     ) throws Exception {
-        SubscriptionDTO dto = subscriptionService.subscribe(subscriptionDTO);
+        PaymentInitiateResponse dto = subscriptionService.subscribe(subscriptionDTO);
         return ResponseEntity.ok().body(dto);
     }
 

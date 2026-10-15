@@ -1,5 +1,7 @@
 package com.raajneel.Service.Implementation;
 
+import com.raajneel.Domain.PaymentGateway;
+import com.raajneel.Domain.PaymentType;
 import com.raajneel.Domain.UserRole;
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Exception.UserException;
@@ -8,9 +10,12 @@ import com.raajneel.Model.Subscription;
 import com.raajneel.Model.SubscriptionPlan;
 import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.SubscriptionDTO;
+import com.raajneel.Payload.Request.PaymentInitiateRequest;
+import com.raajneel.Payload.Response.PaymentInitiateResponse;
 import com.raajneel.Repository.SubscriptionPlanRepository;
 import com.raajneel.Repository.SubscriptionRepository;
 import com.raajneel.Repository.UserRepository;
+import com.raajneel.Service.PaymentService;
 import com.raajneel.Service.SubscriptionService;
 import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +35,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final SubscriptionMapper subscriptionMapper;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final PaymentService  paymentService;
 
     @Override
-    public SubscriptionDTO subscribe(SubscriptionDTO subscriptionDTO) throws Exception {
+    public PaymentInitiateResponse subscribe(SubscriptionDTO subscriptionDTO) throws Exception {
         User user = userService.getCurrentUser();
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionDTO.getPlanId())
                 .orElseThrow(() -> new SubscriptionException("Plan not found with ID: " + subscriptionDTO.getPlanId()));
@@ -48,9 +54,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         subscription.setIsActive(false); // only activate after payment is up
         Subscription savedSubscription =  subscriptionRepository.save(subscription);
 
-        // create payment todo
         // todo prevention of duplicate subscription request
-        return subscriptionMapper.toDTO(savedSubscription);
+        PaymentInitiateRequest paymentInitiateRequest = PaymentInitiateRequest.builder()
+                .userId(user.getId())
+                .subscriptionId(subscription.getId())
+                .paymentType(PaymentType.MEMBERSHIP)
+                .gateway(PaymentGateway.RAZORPAY)
+                .amount(subscription.getPrice())
+                .description("Library Subscription -" + plan.getName())
+                .build();
+        return paymentService.initiatePayment(paymentInitiateRequest);
     }
 
     @Override

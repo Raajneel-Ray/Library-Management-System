@@ -10,7 +10,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class PaymentInitiateResponse {
+
+    private Long userId;
 
     private Long paymentId;
 

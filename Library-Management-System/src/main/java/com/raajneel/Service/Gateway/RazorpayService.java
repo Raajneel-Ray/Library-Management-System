@@ -73,6 +73,8 @@ public class RazorpayService {
                 notes.put("plan", payment.getSubscription().getPlan().getPlanCode());
                 notes.put("type", PaymentType.MEMBERSHIP);
             } else if (payment.getPaymentType() == PaymentType.FINE) {
+                // todo
+                // notes.put("fine_id", payment.getFine().getId());
                 notes.put("type", PaymentType.FINE);
             }
             paymentLinkRequest.put("notes", notes);
@@ -119,6 +121,7 @@ public class RazorpayService {
                         .getBySubscriptionPlanCode(planCode);
                 return amountInRupees == subscriptionPlan.getPrice();
             } else if (paymentType.equals(PaymentType.FINE.toString())) {
+                // todo after implementing fine services
                 Long fineId = notes.getLong("fine_id");
             }
             return false;
