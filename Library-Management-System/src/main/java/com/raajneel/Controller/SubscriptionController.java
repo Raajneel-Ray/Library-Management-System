@@ -8,10 +8,10 @@ import com.raajneel.Service.SubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.print.Pageable;
 import java.util.List;
 
 @RestController
@@ -31,7 +31,7 @@ public class SubscriptionController {
 
     @GetMapping("/admin")
     public ResponseEntity<?> getAllSubscriptions() {
-        org.springframework.data.domain.Pageable pageable = (org.springframework.data.domain.Pageable) PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
         List<SubscriptionDTO> list = subscriptionService.getAllSubscription(pageable);
         return ResponseEntity.ok().body(list);
     }

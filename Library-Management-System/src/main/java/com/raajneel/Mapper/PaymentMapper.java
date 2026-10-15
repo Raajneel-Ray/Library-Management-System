@@ -25,8 +25,6 @@ public class PaymentMapper {
             dto.setSubscriptionId(payment.getSubscription().getId());
         }
         dto.setPaymentType(payment.getPaymentType());
-
-        dto.setPaymentType(payment.getPaymentType());
         dto.setStatus(payment.getStatus());
         dto.setGateway(payment.getGateway());
         dto.setAmount(payment.getAmount());

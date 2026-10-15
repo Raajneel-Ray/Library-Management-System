@@ -1,17 +1,20 @@
 package com.raajneel.Service.Implementation;
 
 import com.raajneel.Domain.PaymentGateway;
+import com.raajneel.Domain.PaymentStatus;
 import com.raajneel.Domain.PaymentType;
 import com.raajneel.Domain.UserRole;
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Exception.UserException;
 import com.raajneel.Mapper.SubscriptionMapper;
+import com.raajneel.Model.Payment;
 import com.raajneel.Model.Subscription;
 import com.raajneel.Model.SubscriptionPlan;
 import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.SubscriptionDTO;
 import com.raajneel.Payload.Request.PaymentInitiateRequest;
 import com.raajneel.Payload.Response.PaymentInitiateResponse;
+import com.raajneel.Repository.PaymentRepository;
 import com.raajneel.Repository.SubscriptionPlanRepository;
 import com.raajneel.Repository.SubscriptionRepository;
 import com.raajneel.Repository.UserRepository;
@@ -21,10 +24,12 @@ import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,9 +40,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final SubscriptionMapper subscriptionMapper;
     private final UserService userService;
     private final UserRepository userRepository;
-    private final PaymentService  paymentService;
+    private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public PaymentInitiateResponse subscribe(SubscriptionDTO subscriptionDTO) throws Exception {
         User user = userService.getCurrentUser();
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionDTO.getPlanId())
@@ -50,17 +57,49 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new SubscriptionException("Subscription plan is not active");
         }
 
+        // 1. Prevent duplicate request: check if user already has an active subscription
+        Optional<Subscription> activeSubscription = subscriptionRepository
+                .findActiveSubscriptionByUserId(user.getId(), LocalDate.now());
+        if (activeSubscription.isPresent()) {
+            throw new SubscriptionException("User already has an active subscription to plan: "
+                    + activeSubscription.get().getPlanName() + ". Duplicate subscription requests are not allowed.");
+        }
+
+        // 2. Prevent duplicate request: check if user has an in-progress / pending payment for membership
+        List<PaymentStatus> pendingStatuses = List.of(PaymentStatus.PENDING, PaymentStatus.PROCESSING);
+        Optional<Payment> recentPendingPayment = paymentRepository
+                .findTopByUserIdAndPaymentTypeAndStatusInOrderByCreatedAtDesc(user.getId(), PaymentType.MEMBERSHIP, pendingStatuses);
+
+        if (recentPendingPayment.isPresent()) {
+            Payment pendingPayment = recentPendingPayment.get();
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(15);
+            if (pendingPayment.getCreatedAt() != null && pendingPayment.getCreatedAt().isAfter(cutoff)) {
+                throw new SubscriptionException("A subscription request is already in progress. Please complete the pending payment or wait 15 minutes before trying again.");
+            } else {
+                pendingPayment.setStatus(PaymentStatus.FAILED);
+                pendingPayment.setFailureReason("Pending payment session expired");
+                paymentRepository.save(pendingPayment);
+            }
+        }
+
+        // 3. Mark any older uncompleted inactive subscriptions as superseded to prevent accumulation
+        List<Subscription> staleSubscriptions = subscriptionRepository.findPendingSubscriptionsByUserId(user.getId());
+        for (Subscription stale : staleSubscriptions) {
+            stale.setCancelledAt(LocalDateTime.now());
+            stale.setCancellationReason("Superseded by new subscription request");
+            subscriptionRepository.save(stale);
+        }
+
         Subscription subscription = subscriptionMapper.toEntity(subscriptionDTO, plan, user);
         subscription.setIsActive(false); // only activate after payment is up
-        Subscription savedSubscription =  subscriptionRepository.save(subscription);
+        Subscription savedSubscription = subscriptionRepository.save(subscription);
 
-        // todo prevention of duplicate subscription request
         PaymentInitiateRequest paymentInitiateRequest = PaymentInitiateRequest.builder()
                 .userId(user.getId())
-                .subscriptionId(subscription.getId())
+                .subscriptionId(savedSubscription.getId())
                 .paymentType(PaymentType.MEMBERSHIP)
                 .gateway(PaymentGateway.RAZORPAY)
-                .amount(subscription.getPrice())
+                .amount(savedSubscription.getPrice())
                 .description("Library Subscription -" + plan.getName())
                 .build();
         return paymentService.initiatePayment(paymentInitiateRequest);
@@ -113,13 +152,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public SubscriptionDTO activateSubscription(Long subscriptionId, Long paymentId) throws SubscriptionException {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(()->new SubscriptionException("Subscription Not found with id : " + subscriptionId ));
+                .orElseThrow(() -> new SubscriptionException("Subscription Not found with id : " + subscriptionId));
 
-        // verify payment todo
+        if (Boolean.TRUE.equals(subscription.getIsActive())) {
+            return subscriptionMapper.toDTO(subscription);
+        }
+
         subscription.setIsActive(true);
-        subscription =  subscriptionRepository.save(subscription);
+        subscription.setStartDate(LocalDate.now());
+        if (subscription.getPlan() != null && subscription.getPlan().getDurationDays() != null) {
+            subscription.setEndDate(LocalDate.now().plusDays(subscription.getPlan().getDurationDays()));
+        }
+        subscription = subscriptionRepository.save(subscription);
         return subscriptionMapper.toDTO(subscription);
     }
 

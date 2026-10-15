@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import javax.swing.text.html.Option;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -24,4 +23,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     @Query("select s from Subscription s where s.isActive = true"
             + " and s.endDate<:today")
     List<Subscription> findExpiredActiveSubscription(@Param("today")LocalDate today);
+
+    @Query("select s from Subscription s where s.user.id =:userId and s.isActive = false and s.cancelledAt is null order by s.createdAt desc")
+    List<Subscription> findPendingSubscriptionsByUserId(@Param("userId") Long userId);
 }
