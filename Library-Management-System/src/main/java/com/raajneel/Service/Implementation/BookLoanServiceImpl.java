@@ -91,7 +91,9 @@ public class BookLoanServiceImpl implements BookLoanService {
                 .status(BookLoanStatus.CHECKED_OUT)
                 .checkoutDate(LocalDate.now())
                 .dueDate(LocalDate.now().plusDays(
-                        Math.min(request.getCheckoutDays(), plan.getMaxDaysPerBook())))
+                        (request.getCheckoutDays() != null && request.getCheckoutDays() > 0)
+                                ? request.getCheckoutDays()
+                                : (plan.getMaxDaysPerBook() != null ? plan.getMaxDaysPerBook() : 14)))
                 .renewalCount(0)
                 .maxRenewals(2)
                 .notes(request.getNotes())

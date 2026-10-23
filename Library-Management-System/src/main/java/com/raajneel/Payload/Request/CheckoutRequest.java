@@ -14,7 +14,7 @@ public class CheckoutRequest {
     private Long bookId;
 
     @Min(value = 1,message = "Checkout days must be at least 1")
-    private  Integer checkoutDays=14; // basic plan allows max days for a checkout as 14
+    private Integer checkoutDays;
 
     private String notes;
 }
