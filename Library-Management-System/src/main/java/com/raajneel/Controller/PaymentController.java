@@ -31,6 +31,17 @@ public class PaymentController {
         }
     }
 
+    @PostMapping("/{paymentId}/cancel")
+    public ResponseEntity<?> cancelPayment(@PathVariable Long paymentId) {
+        try {
+            PaymentDTO payment = paymentService.cancelPayment(paymentId);
+            return ResponseEntity.ok().body(payment);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+
     @GetMapping
     public ResponseEntity<?> getAllPayments(
             @RequestParam(defaultValue = "0") int page,

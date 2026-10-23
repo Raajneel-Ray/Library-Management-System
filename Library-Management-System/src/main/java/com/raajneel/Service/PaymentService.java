@@ -17,6 +17,8 @@ public interface PaymentService {
 
     PaymentDTO verifyPayment(PaymentVerifyRequest request) throws Exception;
 
+    PaymentDTO cancelPayment(Long paymentId) throws Exception;
+
     Page<PaymentDTO> getAllPayments(Pageable pageable);
 
 }

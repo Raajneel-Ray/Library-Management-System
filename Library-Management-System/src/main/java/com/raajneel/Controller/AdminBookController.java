@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/admin/book")
+@RequestMapping({"/api/admin/book", "/api/admin/books", "/api/books/admin", "/api/book/admin"})
 public class AdminBookController {
     private final BookService bookService;
 
@@ -36,15 +36,14 @@ public class AdminBookController {
             @PathVariable Long id,
             @Valid @RequestBody BookDTO bookDTO
     )  throws BookException {
-            BookDTO updatedBook = bookService.updateBook(id, bookDTO);
-            return ResponseEntity.ok(updatedBook);
+        BookDTO updatedBook = bookService.updateBook(id, bookDTO);
+        return ResponseEntity.ok(updatedBook);
     }
 
     @DeleteMapping("/{id}/permanent")
     public ResponseEntity<ApiResponse> deleteBookPermanently(@PathVariable Long id) throws BookException {
         bookService.hardDeleteBook(id);
-        return ResponseEntity.ok(new ApiResponse("Book permanently deleted successfully",true));
+        return ResponseEntity.ok(new ApiResponse("Book permanently deleted successfully", true));
     }
 
 }
-

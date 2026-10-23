@@ -1,4 +1,4 @@
-// API Client covering all 45 backend endpoints
+// API Client covering all backend endpoints
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -44,29 +44,33 @@ const api = {
         };
 
         const token = this.getToken();
-        if (token && !headers['Authorization']) {
+        const isAuthEndpoint = endpoint.startsWith('/auth') || endpoint.startsWith('/api/auth');
+        if (token && !isAuthEndpoint && !headers['Authorization']) {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const config = {
-            ...options,
-            headers
-        };
-
         try {
-            const response = await fetch(url, config);
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
 
-            // Handle 401 Unauthorized
-            if (response.status === 401 && !endpoint.startsWith('/auth/')) {
-                this.clearAuth();
-                window.location.hash = '#login';
-                throw new Error('Session expired. Please log in again.');
+            // Handle unauthorized / token expired
+            if (response.status === 401 || response.status === 403) {
+                // If it's a secured API call and returned 401/403, clear stale auth and redirect
+                if (!isAuthEndpoint) {
+                    api.clearAuth();
+                    if (window.location.hash !== '#login' && window.location.hash !== '#signup') {
+                        window.location.hash = 'login';
+                    }
+                }
             }
 
-            // Parse response body
-            const contentType = response.headers.get('content-type');
+            // Extract content-type
+            const contentType = response.headers.get('content-type') || '';
             let data = null;
-            if (contentType && contentType.includes('application/json')) {
+
+            if (contentType.includes('application/json')) {
                 data = await response.json();
             } else {
                 const text = await response.text();
@@ -74,68 +78,96 @@ const api = {
             }
 
             if (!response.ok) {
-                const errorMessage = data?.message || data?.title || `Request failed with status ${response.status}`;
-                const error = new Error(errorMessage);
-                error.status = response.status;
-                error.data = data;
-                throw error;
+                const errorMessage = (data && (data.message || data.error)) || `HTTP error ${response.status}`;
+                throw new Error(errorMessage);
             }
 
             return data;
-        } catch (err) {
-            console.error(`API Error [${options.method || 'GET'} ${endpoint}]:`, err);
-            throw err;
+        } catch (error) {
+            console.error(`API Error [${endpoint}]:`, error);
+            throw error;
         }
     },
 
-    // 1. AuthController (4 endpoints)
+    // 1. AuthController (5 endpoints)
     auth: {
-        signup(userData) {
-            return api.request('/auth/signup', {
-                method: 'POST',
-                body: JSON.stringify(userData)
-            });
-        },
         login(credentials) {
             return api.request('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify(credentials)
             });
         },
-        forgotPassword(email) {
-            return api.request('/auth/forgot-password', {
+        signup(userData) {
+            return api.request('/auth/signup', {
                 method: 'POST',
-                body: JSON.stringify({ email })
+                body: JSON.stringify(userData)
             });
         },
-        resetPassword(token, newPassword) {
+        forgotPassword(email) {
+            return api.request(`/auth/forgot-password?email=${encodeURIComponent(email)}`, {
+                method: 'POST'
+            });
+        },
+        verifyResetOtp(email, otp) {
+            return api.request(`/auth/verify-reset-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
+                method: 'POST'
+            });
+        },
+        resetPassword(resetData) {
             return api.request('/auth/reset-password', {
                 method: 'POST',
-                body: JSON.stringify({ token, newPassword })
+                body: JSON.stringify(resetData)
             });
         }
     },
 
-    // 2. BookController (6 endpoints)
+    // 2. UserController (3 endpoints)
+    users: {
+        getProfile() {
+            return api.request('/api/users/profile');
+        },
+        getAllAdmin() {
+            return api.request('/api/users/admin');
+        },
+        toggleBlockAdmin(userId) {
+            return api.request(`/api/users/admin/${userId}/block`, {
+                method: 'PUT'
+            });
+        }
+    },
+
+    // 3. BookController & AdminBookController
     books: {
+        getAll(params = {}) {
+            return this.search(params);
+        },
         getById(id) {
             return api.request(`/api/book/${id}`);
         },
         getByIsbn(isbn) {
-            return api.request(`/api/book/isbn/${encodeURIComponent(isbn)}`);
+            return api.request(`/api/book/isbn/${isbn}`);
         },
-        deleteSoft(id) {
-            return api.request(`/api/book/${id}`, { method: 'DELETE' });
+        getStats() {
+            return api.request('/api/book/stats');
         },
-        search(params = {}) {
+        search(arg1 = {}, arg2 = {}) {
+            let params = {};
+            if (typeof arg1 === 'string') {
+                params = { ...arg2, searchTerm: arg1 };
+            } else if (typeof arg1 === 'object') {
+                params = { ...arg1 };
+            }
+
             const query = new URLSearchParams();
-            if (params.genreId) query.append('genreId', params.genreId);
+            if (params.genreId !== undefined && params.genreId !== null && params.genreId !== '') query.append('genreId', params.genreId);
             if (params.availableOnly !== undefined) query.append('availableOnly', params.availableOnly);
             if (params.activeOnly !== undefined) query.append('activeOnly', params.activeOnly);
             if (params.page !== undefined) query.append('page', params.page);
             if (params.size !== undefined) query.append('size', params.size);
             if (params.sortBy) query.append('sortBy', params.sortBy);
             if (params.sortDirection) query.append('sortDirection', params.sortDirection);
+            else if (params.sortDir) query.append('sortDirection', params.sortDir);
+
             return api.request(`/api/book/search?${query.toString()}`);
         },
         advancedSearch(searchRequest = {}) {
@@ -144,33 +176,44 @@ const api = {
                 body: JSON.stringify(searchRequest)
             });
         },
-        getStats() {
-            return api.request('/api/book/stats');
-        }
-    },
-
-    // 3. AdminBookController (4 endpoints - ADMIN ONLY)
-    adminBooks: {
-        create(bookData) {
+        filter(filterParams, params = {}) {
+            return this.search({ ...filterParams, ...params });
+        },
+        createAdmin(bookData) {
             return api.request('/api/admin/book', {
                 method: 'POST',
                 body: JSON.stringify(bookData)
             });
         },
-        createBulk(booksList) {
+        createBulkAdmin(booksList) {
             return api.request('/api/admin/book/bulk', {
                 method: 'POST',
                 body: JSON.stringify(booksList)
             });
         },
-        update(id, bookData) {
+        updateAdmin(id, bookData) {
             return api.request(`/api/admin/book/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(bookData)
             });
         },
+        delete(id) {
+            return api.request(`/api/book/${id}`, {
+                method: 'DELETE'
+            });
+        },
+        deleteSoft(id) {
+            return api.request(`/api/book/${id}`, {
+                method: 'DELETE'
+            });
+        },
         deletePermanent(id) {
             return api.request(`/api/admin/book/${id}/permanent`, {
+                method: 'DELETE'
+            });
+        },
+        deleteAdmin(id) {
+            return api.request(`/api/book/${id}`, {
                 method: 'DELETE'
             });
         }
@@ -178,63 +221,60 @@ const api = {
 
     // 4. BookLoanController (7 endpoints)
     loans: {
-        checkout(checkoutRequest) {
-            return api.request('/api/book-loans/checkout', {
+        checkout(bookId) {
+            return api.request(`/api/book-loans`, {
                 method: 'POST',
-                body: JSON.stringify(checkoutRequest)
+                body: JSON.stringify({ bookId })
             });
         },
-        checkoutForUser(userId, checkoutRequest) {
-            return api.request(`/api/book-loans/checkout/user/${userId}`, {
-                method: 'POST',
-                body: JSON.stringify(checkoutRequest)
+        returnBook(loanId) {
+            return api.request(`/api/book-loans/return?loanId=${loanId}`, {
+                method: 'POST'
             });
         },
-        checkin(checkinRequest) {
-            return api.request('/api/book-loans/checkin', {
-                method: 'POST',
-                body: JSON.stringify(checkinRequest)
-            });
-        },
-        renew(renewRequest) {
-            return api.request('/api/book-loans/renew', {
-                method: 'POST',
-                body: JSON.stringify(renewRequest)
+        renew(loanId) {
+            return api.request(`/api/book-loans/renew?loanId=${loanId}`, {
+                method: 'POST'
             });
         },
         getMyLoans(params = {}) {
             const query = new URLSearchParams();
-            if (params.status) query.append('status', params.status);
             if (params.page !== undefined) query.append('page', params.page);
             if (params.size !== undefined) query.append('size', params.size);
+            if (params.status) query.append('status', params.status);
             return api.request(`/api/book-loans/mybookloans?${query.toString()}`);
         },
-        search(searchRequest = {}) {
-            return api.request('/api/book-loans/search', {
-                method: 'POST',
-                body: JSON.stringify(searchRequest)
-            });
+        getAllAdmin(params = {}) {
+            const query = new URLSearchParams();
+            if (params.page !== undefined) query.append('page', params.page);
+            if (params.size !== undefined) query.append('size', params.size);
+            if (params.status) query.append('status', params.status);
+            return api.request(`/api/book-loans/all?${query.toString()}`);
         },
-        updateOverdueAdmin() {
-            return api.request('/api/book-loans/admin/update-overdue', {
-                method: 'POST'
+        getOverdueAdmin() {
+            return api.request('/api/book-loans/overdue');
+        },
+        markLostAdmin(loanId, reason = '') {
+            const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+            return api.request(`/api/book-loans/lost/${loanId}${query}`, {
+                method: 'PUT'
             });
         }
     },
 
-    // 5. GenreController (9 endpoints)
+    // 5. GenreController (8 endpoints)
     genres: {
-        create(genreData) {
-            return api.request('/api/genres/create', {
-                method: 'POST',
-                body: JSON.stringify(genreData)
-            });
-        },
         getAll() {
             return api.request('/api/genres');
         },
         getById(id) {
             return api.request(`/api/genres/${id}`);
+        },
+        create(genreData) {
+            return api.request('/api/genres', {
+                method: 'POST',
+                body: JSON.stringify(genreData)
+            });
         },
         update(id, genreData) {
             return api.request(`/api/genres/${id}`, {
@@ -319,22 +359,17 @@ const api = {
         }
     },
 
-    // 8. UserController (2 endpoints)
-    users: {
-        getAll() {
-            return api.request('/api/users/list');
-        },
-        getProfile() {
-            return api.request('/api/users/profile');
-        }
-    },
-
-    // 9. PaymentController (2 endpoints)
+    // 9. PaymentController (3 endpoints)
     payments: {
         verify(verifyRequest) {
             return api.request('/api/payments/verify', {
                 method: 'POST',
                 body: JSON.stringify(verifyRequest)
+            });
+        },
+        cancel(paymentId) {
+            return api.request(`/api/payments/${paymentId}/cancel`, {
+                method: 'POST'
             });
         },
         getAll(params = {}) {

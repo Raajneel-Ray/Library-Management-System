@@ -17,24 +17,10 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/book")
+@RequestMapping({"/api/book", "/api/books"})
 public class BookController {
 
     private final BookService bookService;
-
-    /** Adding admin book controller where only admin can create new books
-    @PostMapping
-    public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookDTO bookDTO) throws BookException {
-        BookDTO createdBook = bookService.createBook(bookDTO);
-        return ResponseEntity.ok(createdBook);
-    }
-
-    @PostMapping("/bulk")
-    public ResponseEntity<?> createBooksBulk(
-            @Valid @RequestBody List<BookDTO> bookDTOS) throws BookException {
-        List<BookDTO> createdBooks = bookService.createBooksBulk(bookDTOS);
-        return ResponseEntity.ok(createdBooks);
-    }*/
 
     @GetMapping("/{id}")
     public ResponseEntity<BookDTO> getBookById(@PathVariable Long id) throws BookException {
@@ -47,31 +33,12 @@ public class BookController {
         BookDTO bookDTO = bookService.getBookByISBN(isbn);
         return ResponseEntity.ok(bookDTO);
     }
-    /**
-    @PutMapping("/{id}")
-    public ResponseEntity<BookDTO> updateBook(
-            @PathVariable Long id,
-            @Valid @RequestBody BookDTO bookDTO
-    )  throws BookException {
-        try {
-            BookDTO updatedBook = bookService.updateBook(id, bookDTO);
-            return ResponseEntity.ok(updatedBook);
-        } catch (BookException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    } */
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse> deleteBook(@PathVariable Long id) throws BookException {
         bookService.deleteBook(id);
-        return ResponseEntity.ok(new ApiResponse("Book deleted successfully",true));
+        return ResponseEntity.ok(new ApiResponse("Book deleted successfully", true));
     }
-    /**
-    @DeleteMapping("/{id}/permanent")
-    public ResponseEntity<ApiResponse> deleteBookPermanently(@PathVariable Long id) throws BookException {
-        bookService.hardDeleteBook(id);
-        return ResponseEntity.ok(new ApiResponse("Book permanently deleted successfully",true));
-    } */
 
     // search books using search parameter
     @GetMapping("/search")
@@ -83,7 +50,7 @@ public class BookController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection
-    ){
+    ) {
         // build book search request using query parameters
         BookSearchRequest bookSearchRequest = new BookSearchRequest();
         bookSearchRequest.setGenreId(genreId);
@@ -96,6 +63,7 @@ public class BookController {
         PageResponse<BookDTO> books = bookService.searchBooksWithFilters(bookSearchRequest);
         return ResponseEntity.ok(books);
     }
+
     @PostMapping("/search")
     public ResponseEntity<PageResponse<BookDTO>> advancedSearch(
             @RequestBody BookSearchRequest bookSearchRequest) {

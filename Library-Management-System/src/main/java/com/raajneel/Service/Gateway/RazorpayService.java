@@ -24,7 +24,7 @@ public class RazorpayService {
     @Value("${razorpay.key.secret:}")
     private String razorpayKeySecret;
 
-    @Value("${razorpay.callback.base-url:http://localhost:5173}")
+    @Value("${razorpay.callback.base-url:http://localhost:3000}")
     private String callbackBaseurl;
 
     private final SubscriptionPlanService  subscriptionPlanService;
@@ -59,7 +59,7 @@ public class RazorpayService {
             paymentLinkRequest.put("reminder_enable", true);
 
             // callback configuration
-            String successUrl = callbackBaseurl + "/payment-success/" + payment.getId();
+            String successUrl = callbackBaseurl + "/payment-success.html?paymentId=" + payment.getId();
             // String cancelUrl = callbackBaseurl + "/payment-cancelled/" + payment.getId();
             paymentLinkRequest.put("callback_url", successUrl);
             paymentLinkRequest.put("callback_method", "get");

@@ -2,6 +2,7 @@ package com.raajneel.Service.Implementation;
 
 import com.raajneel.Domain.PaymentGateway;
 import com.raajneel.Domain.PaymentStatus;
+import com.raajneel.Domain.UserRole;
 import com.raajneel.Events.Publisher.PaymentEventPublisher;
 import com.raajneel.Exception.PaymentException;
 import com.raajneel.Exception.SubscriptionException;
@@ -20,6 +21,7 @@ import com.raajneel.Repository.SubscriptionRepository;
 import com.raajneel.Repository.UserRepository;
 import com.raajneel.Service.Gateway.RazorpayService;
 import com.raajneel.Service.PaymentService;
+import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.data.domain.Page;
@@ -34,11 +36,12 @@ import java.util.UUID;
 public class PaymentServiceImpl implements PaymentService {
 
     private final UserRepository userRepository;
+    private final UserService userService;
     private final PaymentRepository paymentRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final RazorpayService razorpayService;
-    private final PaymentMapper  paymentMapper;
-    private  final PaymentEventPublisher paymentEventPublisher;
+    private final PaymentMapper paymentMapper;
+    private final PaymentEventPublisher paymentEventPublisher;
 
     @Override
     public PaymentInitiateResponse initiatePayment(PaymentInitiateRequest request) throws UserException, PaymentException {
@@ -101,21 +104,52 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new PaymentException("Payment not found"));
         boolean isValid = razorpayService.isValidPayment(request.getRazorpayPaymentId());
 
-        if (PaymentGateway.RAZORPAY==payment.getGateway()){
-            if (isValid){
+        if (PaymentGateway.RAZORPAY == payment.getGateway()) {
+            if (isValid) {
                 payment.setGatewayPaymentId(request.getRazorpayPaymentId());
             }
         }
-        if (isValid){
+        if (isValid) {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setCompletedAt(LocalDateTime.now());
-            payment=paymentRepository.save(payment);
+            payment = paymentRepository.save(payment);
 
             paymentEventPublisher.publishPaymentSuccessEvent(payment);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setFailureReason("Payment failed since its not valid");
-            payment=paymentRepository.save(payment);
+            payment = paymentRepository.save(payment);
+        }
+        return paymentMapper.toDTO(payment);
+    }
+
+    @Override
+    public PaymentDTO cancelPayment(Long paymentId) throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentException("Payment not found with id: " + paymentId));
+
+        boolean isOwner = payment.getUser() != null && payment.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == UserRole.ROLE_ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new PaymentException("You do not have permission to cancel this payment");
+        }
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            throw new PaymentException("Cannot cancel an already completed payment");
+        }
+
+        payment.setStatus(PaymentStatus.FAILED);
+        payment.setFailureReason("Cancelled by user");
+        payment = paymentRepository.save(payment);
+
+        if (payment.getSubscription() != null) {
+            Subscription sub = payment.getSubscription();
+            if (!Boolean.TRUE.equals(sub.getIsActive())) {
+                sub.setCancelledAt(LocalDateTime.now());
+                sub.setCancellationReason("Cancelled by user during payment");
+                subscriptionRepository.save(sub);
+            }
         }
         return paymentMapper.toDTO(payment);
     }

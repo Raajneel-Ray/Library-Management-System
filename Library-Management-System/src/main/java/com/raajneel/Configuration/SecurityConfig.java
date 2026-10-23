@@ -19,12 +19,13 @@ import java.util.Collections;
 @Configuration
 public class SecurityConfig {
     @Bean
-    public  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .sessionManagement(management -> management.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS)
                 )
-                .authorizeHttpRequests(Authorize->Authorize
+                .authorizeHttpRequests(Authorize -> Authorize
+                        .requestMatchers("/auth/**", "/api/auth/**").permitAll()
                         .requestMatchers("/api/subscription-plans/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/*/admin/**", "/api/*/admin").hasRole("ADMIN")
@@ -33,14 +34,14 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(new JwtValidator(), BasicAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors-> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .build();
     }
 
     private CorsConfigurationSource corsConfigurationSource() {
         return new CorsConfigurationSource() {
             @Override
-            public  CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+            public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                 CorsConfiguration cfg = new CorsConfiguration();
                 cfg.setAllowCredentials(true);
                 cfg.setAllowedOrigins(
@@ -58,6 +59,7 @@ public class SecurityConfig {
             }
         };
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
