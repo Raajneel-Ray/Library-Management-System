@@ -1,5 +1,6 @@
 package com.raajneel.Service.Implementation;
 
+import com.raajneel.Exception.UserException;
 import com.raajneel.Mapper.UserMapper;
 import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.UserDTO;
@@ -34,5 +35,12 @@ public class UserServiceImpl implements UserService {
         return users.stream()
                 .map(UserMapper::toUserDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public User findById(Long id) throws UserException {
+        return userRepository.findById(id).orElseThrow(
+                () -> new UserException("User not found with given id")
+        );
     }
 }

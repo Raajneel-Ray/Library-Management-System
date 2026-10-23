@@ -16,11 +16,11 @@ public interface BookLoanService {
 
     BookLoanDTO checkoutBookForUser(Long userId, CheckoutRequest request) throws Exception;
 
-    BookLoanDTO checkinBook(CheckinRequest request);
+    BookLoanDTO checkinBook(CheckinRequest request) throws Exception;
 
-    BookLoanDTO renewCheckout(RenewRequest renewRequest);
+    BookLoanDTO renewCheckout(RenewRequest renewRequest) throws Exception;
 
-    PageResponse<BookLoanDTO> getMyBookLoans(BookLoanStatus status, int page, int size);
+    PageResponse<BookLoanDTO> getMyBookLoans(BookLoanStatus status, int page, int size) throws Exception;
 
     PageResponse<BookLoanDTO> getBookLoans(BookLoanSearchRequest request);
 

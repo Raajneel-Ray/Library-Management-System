@@ -41,7 +41,6 @@ public class BookLoan {
 
     private  LocalDate dueDate;
 
-    @Column(nullable = false)
     private LocalDate returnDate;
 
     @Column(nullable = false)

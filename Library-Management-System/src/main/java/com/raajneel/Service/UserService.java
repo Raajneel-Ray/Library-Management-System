@@ -1,5 +1,6 @@
 package com.raajneel.Service;
 
+import com.raajneel.Exception.UserException;
 import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.UserDTO;
 
@@ -10,4 +11,6 @@ public interface UserService {
     User getCurrentUser() throws Exception;
 
     List<UserDTO> getAllUsers();
+
+    User findById(Long id) throws UserException;
 }
