@@ -1,5 +1,6 @@
 package com.raajneel.Mapper;
 
+import com.raajneel.Domain.FineStatus;
 import com.raajneel.Model.Fine;
 import com.raajneel.Payload.DTO.FineDTO;
 import org.springframework.stereotype.Component;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class FineMapper {
     public FineDTO toDTO(Fine fine){
         if (fine==null){
-            return  null;
+            return null;
         }
         FineDTO dto=new FineDTO();
         dto.setId(fine.getId());
@@ -33,12 +34,23 @@ public class FineMapper {
         dto.setReason(fine.getReason());
         dto.setNotes(fine.getNotes());
 
+        if (fine.getStatus() == FineStatus.PAID) {
+            dto.setAmountPaid(fine.getAmount());
+            dto.setAmountOutstanding(0L);
+        } else if (fine.getStatus() == FineStatus.WAIVED) {
+            dto.setAmountPaid(0L);
+            dto.setAmountOutstanding(0L);
+        } else {
+            dto.setAmountPaid(0L);
+            dto.setAmountOutstanding(fine.getAmount());
+        }
+
         if (fine.getWaivedBy()!=null){
             dto.setWaivedByUserId(fine.getWaivedBy().getId());
             dto.setWaivedByUserName(fine.getWaivedBy().getFullName());
         }
         dto.setWaivedAt(fine.getWaivedAt());
-        dto.setWaivedByUserName(fine.getWaiverReason());
+        dto.setWaiverReason(fine.getWaiverReason());
 
         dto.setPaidAt(fine.getPaidAt());
         if (fine.getProcessedBy()!=null){
@@ -49,6 +61,6 @@ public class FineMapper {
         dto.setCreatedAt(fine.getCreatedAt());
         dto.setUpdatedAt(fine.getUpdatedAt());
 
-        return  dto;
+        return dto;
     }
 }

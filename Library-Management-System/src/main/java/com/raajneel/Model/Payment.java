@@ -28,6 +28,12 @@ public class Payment {
     @ManyToOne
     private Subscription subscription;
 
+    @ManyToOne
+    private Fine fine;
+
+    @ManyToOne
+    private BookLoan bookLoan;
+
     @Enumerated(EnumType.STRING)
     private PaymentType paymentType;
 

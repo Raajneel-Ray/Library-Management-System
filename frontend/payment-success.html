@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Verification - LibraryMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background-color: var(--bg-main, #f8fafc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: inherit;
+        }
+        .verify-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+        }
+        .status-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+        .details-box {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+            text-align: left;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-card" id="status-card">
+        <div class="status-icon">🔄</div>
+        <h2 style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">Verifying Payment</h2>
+        <p class="text-muted" id="status-message">Please wait while we confirm your payment with the gateway...</p>
+        <div class="spinner" id="spinner" style="margin: 2rem auto;"></div>
+        <div class="details-box" id="details-box" style="display: none;"></div>
+        <div id="actions-box" style="margin-top: 1.5rem; display: none;">
+            <a href="index.html#subscriptions" class="btn btn-primary w-full">Return to Subscriptions</a>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        async function runAutoVerification() {
+            const params = new URLSearchParams(window.location.search);
+            const razorpayPaymentId = params.get('razorpay_payment_id');
+            const razorpayPaymentLinkId = params.get('razorpay_payment_link_id');
+            const paymentId = params.get('paymentId');
+
+            const statusCard = document.getElementById('status-card');
+            const statusMsg = document.getElementById('status-message');
+            const spinner = document.getElementById('spinner');
+            const detailsBox = document.getElementById('details-box');
+            const actionsBox = document.getElementById('actions-box');
+
+            if (!razorpayPaymentId) {
+                spinner.style.display = 'none';
+                statusCard.querySelector('.status-icon').textContent = '⚠️';
+                statusMsg.textContent = 'No payment ID detected in callback URL.';
+                actionsBox.style.display = 'block';
+                return;
+            }
+
+            detailsBox.style.display = 'block';
+            detailsBox.innerHTML = `
+                <div><strong>Payment ID:</strong> <code>${utils.escapeHtml(razorpayPaymentId)}</code></div>
+                ${paymentId ? `<div><strong>Session ID:</strong> #${utils.escapeHtml(paymentId)}</div>` : ''}
+            `;
+
+            try {
+                // Verify with backend
+                const verified = await api.payments.verify({
+                    razorpayPaymentId: razorpayPaymentId
+                });
+
+                // Clear cached pending payment in localStorage
+                localStorage.removeItem('pending_payment');
+
+                spinner.style.display = 'none';
+                statusCard.querySelector('.status-icon').textContent = '✅';
+                statusCard.querySelector('h2').textContent = 'Payment Verified!';
+                statusCard.querySelector('h2').style.color = '#16a34a';
+                statusMsg.textContent = 'Your payment was confirmed and your subscription has been activated! Redirecting in 2 seconds...';
+                actionsBox.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = 'index.html#subscriptions';
+                }, 2000);
+            } catch (err) {
+                console.error('Verification error:', err);
+                spinner.style.display = 'none';
+                statusCard.querySelector('.status-icon').textContent = '❌';
+                statusCard.querySelector('h2').textContent = 'Verification Failed';
+                statusCard.querySelector('h2').style.color = '#dc2626';
+                statusMsg.textContent = err.message || 'Payment verification failed.';
+                actionsBox.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', runAutoVerification);
+    </script>
+</body>
+</html>

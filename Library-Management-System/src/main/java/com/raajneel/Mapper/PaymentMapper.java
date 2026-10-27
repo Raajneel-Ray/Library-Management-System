@@ -19,7 +19,9 @@ public class PaymentMapper {
             dto.setUserEmail(payment.getUser().getEmail());
         }
 
-//        if (payment.getBookLoan())
+        if (payment.getBookLoan() != null) {
+            dto.setBookLoanId(payment.getBookLoan().getId());
+        }
 
         if (payment.getSubscription()!=null){
             dto.setSubscriptionId(payment.getSubscription().getId());

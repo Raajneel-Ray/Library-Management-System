@@ -12,6 +12,8 @@ import com.razorpay.RazorpayException;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
+import com.raajneel.Model.Fine;
+import com.raajneel.Repository.FineRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,6 +30,7 @@ public class RazorpayService {
     private String callbackBaseurl;
 
     private final SubscriptionPlanService  subscriptionPlanService;
+    private final FineRepository fineRepository;
     public PaymentLinkResponse createPaymentLink(User user, Payment payment) {
         try {
             RazorpayClient razorpayClient = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
@@ -73,8 +76,9 @@ public class RazorpayService {
                 notes.put("plan", payment.getSubscription().getPlan().getPlanCode());
                 notes.put("type", PaymentType.MEMBERSHIP);
             } else if (payment.getPaymentType() == PaymentType.FINE) {
-                // todo
-                // notes.put("fine_id", payment.getFine().getId());
+                if (payment.getFine() != null) {
+                    notes.put("fine_id", payment.getFine().getId());
+                }
                 notes.put("type", PaymentType.FINE);
             }
             paymentLinkRequest.put("notes", notes);
@@ -121,8 +125,14 @@ public class RazorpayService {
                         .getBySubscriptionPlanCode(planCode);
                 return amountInRupees == subscriptionPlan.getPrice();
             } else if (paymentType.equals(PaymentType.FINE.toString())) {
-                // todo after implementing fine services
-                Long fineId = notes.getLong("fine_id");
+                if (notes.has("fine_id")) {
+                    Long fineId = notes.getLong("fine_id");
+                    Fine fine = fineRepository.findById(fineId).orElse(null);
+                    if (fine != null) {
+                        return amountInRupees == fine.getAmount();
+                    }
+                }
+                return true;
             }
             return false;
         } catch (Exception e) {

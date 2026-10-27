@@ -3,10 +3,7 @@ package com.raajneel.Model;
 import com.raajneel.Domain.FineStatus;
 import com.raajneel.Domain.FineType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -16,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "fines")
 @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
+@Builder
 public class Fine {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

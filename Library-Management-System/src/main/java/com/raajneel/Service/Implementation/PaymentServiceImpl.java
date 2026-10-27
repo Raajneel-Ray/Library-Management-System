@@ -8,6 +8,8 @@ import com.raajneel.Exception.PaymentException;
 import com.raajneel.Exception.SubscriptionException;
 import com.raajneel.Exception.UserException;
 import com.raajneel.Mapper.PaymentMapper;
+import com.raajneel.Model.BookLoan;
+import com.raajneel.Model.Fine;
 import com.raajneel.Model.Payment;
 import com.raajneel.Model.Subscription;
 import com.raajneel.Model.User;
@@ -16,6 +18,8 @@ import com.raajneel.Payload.Request.PaymentInitiateRequest;
 import com.raajneel.Payload.Request.PaymentVerifyRequest;
 import com.raajneel.Payload.Response.PaymentInitiateResponse;
 import com.raajneel.Payload.Response.PaymentLinkResponse;
+import com.raajneel.Repository.BookLoanRepository;
+import com.raajneel.Repository.FineRepository;
 import com.raajneel.Repository.PaymentRepository;
 import com.raajneel.Repository.SubscriptionRepository;
 import com.raajneel.Repository.UserRepository;
@@ -39,6 +43,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserService userService;
     private final PaymentRepository paymentRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final FineRepository fineRepository;
+    private final BookLoanRepository bookLoanRepository;
     private final RazorpayService razorpayService;
     private final PaymentMapper paymentMapper;
     private final PaymentEventPublisher paymentEventPublisher;
@@ -66,6 +72,16 @@ public class PaymentServiceImpl implements PaymentService {
                     .findById(request.getSubscriptionId())
                     .orElseThrow(() -> new PaymentException("Subscription not found"));
             payment.setSubscription(subscription);
+        }
+        if (request.getFineId() != null) {
+            Fine fine = fineRepository.findById(request.getFineId())
+                    .orElseThrow(() -> new PaymentException("Fine not found with id: " + request.getFineId()));
+            payment.setFine(fine);
+        }
+        if (request.getBookLoanId() != null) {
+            BookLoan bookLoan = bookLoanRepository.findById(request.getBookLoanId())
+                    .orElseThrow(() -> new PaymentException("Book loan not found with id: " + request.getBookLoanId()));
+            payment.setBookLoan(bookLoan);
         }
         payment = paymentRepository.save(payment);
 
