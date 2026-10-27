@@ -221,20 +221,28 @@ const api = {
 
     // 4. BookLoanController (7 endpoints)
     loans: {
-        checkout(bookId) {
-            return api.request(`/api/book-loans`, {
+        checkout(checkoutRequest) {
+            return api.request('/api/book-loans/checkout', {
                 method: 'POST',
-                body: JSON.stringify({ bookId })
+                body: JSON.stringify(checkoutRequest)
             });
         },
-        returnBook(loanId) {
-            return api.request(`/api/book-loans/return?loanId=${loanId}`, {
-                method: 'POST'
+        checkoutForUser(userId, checkoutRequest) {
+            return api.request(`/api/book-loans/checkout/user/${userId}`, {
+                method: 'POST',
+                body: JSON.stringify(checkoutRequest)
             });
         },
-        renew(loanId) {
-            return api.request(`/api/book-loans/renew?loanId=${loanId}`, {
-                method: 'POST'
+        checkin(checkinRequest) {
+            return api.request('/api/book-loans/checkin', {
+                method: 'POST',
+                body: JSON.stringify(checkinRequest)
+            });
+        },
+        renew(renewRequest) {
+            return api.request('/api/book-loans/renew', {
+                method: 'POST',
+                body: JSON.stringify(renewRequest)
             });
         },
         getMyLoans(params = {}) {
@@ -244,21 +252,23 @@ const api = {
             if (params.status) query.append('status', params.status);
             return api.request(`/api/book-loans/mybookloans?${query.toString()}`);
         },
-        getAllAdmin(params = {}) {
-            const query = new URLSearchParams();
-            if (params.page !== undefined) query.append('page', params.page);
-            if (params.size !== undefined) query.append('size', params.size);
-            if (params.status) query.append('status', params.status);
-            return api.request(`/api/book-loans/all?${query.toString()}`);
-        },
-        getOverdueAdmin() {
-            return api.request('/api/book-loans/overdue');
-        },
-        markLostAdmin(loanId, reason = '') {
-            const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
-            return api.request(`/api/book-loans/lost/${loanId}${query}`, {
-                method: 'PUT'
+        search(searchRequest = {}) {
+            return api.request('/api/book-loans/search', {
+                method: 'POST',
+                body: JSON.stringify(searchRequest)
             });
+        },
+        updateOverdueAdmin() {
+            return api.request('/api/book-loans/admin/update-overdue', {
+                method: 'POST'
+            });
+        },
+        // Backward-compatibility aliases
+        returnBook(loanId) {
+            return this.checkin({ bookLoanId: loanId });
+        },
+        getAllAdmin(params = {}) {
+            return this.search(params);
         }
     },
 
@@ -379,6 +389,45 @@ const api = {
             if (params.sortBy) query.append('sortBy', params.sortBy);
             if (params.sortDir) query.append('sortDir', params.sortDir);
             return api.request(`/api/payments?${query.toString()}`);
+        }
+    },
+
+    // 10. FineController (5 endpoints)
+    fines: {
+        create(fineData) {
+            return api.request('/api/fines', {
+                method: 'POST',
+                body: JSON.stringify(fineData)
+            });
+        },
+        pay(id, transactionId = null) {
+            const query = transactionId ? `?transactionId=${encodeURIComponent(transactionId)}` : '';
+            return api.request(`/api/fines/${id}/pay${query}`, {
+                method: 'POST'
+            });
+        },
+        waive(waiveData) {
+            return api.request('/api/fines/waive', {
+                method: 'POST',
+                body: JSON.stringify(waiveData)
+            });
+        },
+        getMyFines(params = {}) {
+            const query = new URLSearchParams();
+            if (params.status) query.append('status', params.status);
+            if (params.type) query.append('type', params.type);
+            const qs = query.toString();
+            return api.request(`/api/fines/my${qs ? '?' + qs : ''}`);
+        },
+        getAll(params = {}) {
+            const query = new URLSearchParams();
+            if (params.status) query.append('status', params.status);
+            if (params.type) query.append('type', params.type);
+            if (params.userId) query.append('userId', params.userId);
+            if (params.page !== undefined) query.append('page', params.page);
+            if (params.size !== undefined) query.append('size', params.size);
+            const qs = query.toString();
+            return api.request(`/api/fines${qs ? '?' + qs : ''}`);
         }
     }
 };

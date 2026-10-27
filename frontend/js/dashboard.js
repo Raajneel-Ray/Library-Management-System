@@ -41,6 +41,13 @@ const dashboard = {
                         <div class="stat-label">My Membership</div>
                     </div>
                 </div>
+                <div class="stat-card" style="cursor: pointer;" onclick="router.navigate('fines')">
+                    <div class="stat-icon" style="background: var(--danger-light); color: var(--danger);">💸</div>
+                    <div>
+                        <div class="stat-value" id="stat-pending-fines">-</div>
+                        <div class="stat-label">Unpaid Fines</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Profile & Active Subscription Overview -->
@@ -77,23 +84,38 @@ const dashboard = {
             </div>
 
             <!-- Future Roadmap Notice -->
-            ${utils.renderFutureFeatureNote('Book Reviews, Reservations, Wishlist & Fine Calculation')}
+            ${utils.renderFutureFeatureNote('Book Reviews, Reservations & Wishlist')}
         `;
 
         this.loadDashboardData();
     },
 
     async loadDashboardData() {
-        // Load Book Stats & Genres
+        // Load Book Stats, Genres & User Fines
         try {
-            const [bookStats, genreCount] = await Promise.all([
+            const [bookStats, genreCount, userFines] = await Promise.all([
                 api.books.getStats().catch(() => ({ totalActiveBooks: 0, totalAvailableBooks: 0 })),
-                api.genres.getCount().catch(() => 0)
+                api.genres.getCount().catch(() => 0),
+                api.fines.getMyFines({ status: 'PENDING' }).catch(() => [])
             ]);
 
             document.getElementById('stat-active-books').textContent = bookStats.totalActiveBooks || 0;
             document.getElementById('stat-available-books').textContent = bookStats.totalAvailableBooks || 0;
             document.getElementById('stat-genres').textContent = genreCount || 0;
+
+            const pendingFinesEl = document.getElementById('stat-pending-fines');
+            if (pendingFinesEl) {
+                let pendingTotal = 0;
+                (userFines || []).forEach(f => {
+                    pendingTotal += (f.amountOutstanding !== undefined && f.amountOutstanding !== null ? f.amountOutstanding : f.amount);
+                });
+                pendingFinesEl.textContent = utils.formatCurrency(pendingTotal);
+                if (pendingTotal > 0) {
+                    pendingFinesEl.style.color = 'var(--danger)';
+                } else {
+                    pendingFinesEl.style.color = 'var(--success)';
+                }
+            }
         } catch (e) {
             console.error('Failed to load stats:', e);
         }

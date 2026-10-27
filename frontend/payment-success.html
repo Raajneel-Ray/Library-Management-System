@@ -93,15 +93,22 @@
                 // Clear cached pending payment in localStorage
                 localStorage.removeItem('pending_payment');
 
+                const isFine = verified && (verified.paymentType === 'FINE' || verified.paymentType === 'LOST_BOOK_PENALTY' || verified.paymentType === 'DAMAGED_BOOK_PENALTY');
+                const targetHash = isFine ? '#fines' : '#subscriptions';
+                const successMsgText = isFine 
+                    ? 'Your payment was confirmed and your fine has been settled! Redirecting in 2 seconds...' 
+                    : 'Your payment was confirmed and your subscription has been activated! Redirecting in 2 seconds...';
+
                 spinner.style.display = 'none';
                 statusCard.querySelector('.status-icon').textContent = '✅';
                 statusCard.querySelector('h2').textContent = 'Payment Verified!';
                 statusCard.querySelector('h2').style.color = '#16a34a';
-                statusMsg.textContent = 'Your payment was confirmed and your subscription has been activated! Redirecting in 2 seconds...';
+                statusMsg.textContent = successMsgText;
+                actionsBox.innerHTML = `<a href="index.html${targetHash}" class="btn btn-primary w-full">Return to ${isFine ? 'My Fines' : 'Subscriptions'}</a>`;
                 actionsBox.style.display = 'block';
 
                 setTimeout(() => {
-                    window.location.href = 'index.html#subscriptions';
+                    window.location.href = `index.html${targetHash}`;
                 }, 2000);
             } catch (err) {
                 console.error('Verification error:', err);

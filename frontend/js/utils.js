@@ -133,6 +133,28 @@ const utils = {
         return `<span class="badge ${item.cls}">${item.label}</span>`;
     },
 
+    renderFineStatusBadge(status) {
+        const statusMap = {
+            PENDING: { label: 'Pending Payment', cls: 'badge-warning' },
+            PARTIALLY_PAID: { label: 'Partially Paid', cls: 'badge-info' },
+            PAID: { label: 'Paid', cls: 'badge-success' },
+            WAIVED: { label: 'Waived', cls: 'badge-secondary' }
+        };
+        const item = statusMap[status] || { label: status || 'Unknown', cls: 'badge-secondary' };
+        return `<span class="badge ${item.cls}">${item.label}</span>`;
+    },
+
+    renderFineTypeBadge(type) {
+        const typeMap = {
+            OVERDUE: { label: 'Overdue Penalty', cls: 'badge-danger' },
+            DAMAGE: { label: 'Book Damage', cls: 'badge-warning' },
+            LOSS: { label: 'Lost Book', cls: 'badge-danger' },
+            PROCESSING: { label: 'Processing Fee', cls: 'badge-info' }
+        };
+        const item = typeMap[type] || { label: type || 'Fine', cls: 'badge-secondary' };
+        return `<span class="badge ${item.cls}">${item.label}</span>`;
+    },
+
     renderActiveBadge(isActive) {
         return isActive
             ? `<span class="badge badge-success">Active</span>`

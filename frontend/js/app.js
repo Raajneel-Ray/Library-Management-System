@@ -71,6 +71,9 @@ const app = {
             <a href="#loans" class="nav-link ${activePath === 'loans' ? 'active' : ''}">
                 <span class="nav-icon">📑</span> My Loans
             </a>
+            <a href="#fines" class="nav-link ${activePath === 'fines' ? 'active' : ''}">
+                <span class="nav-icon">💸</span> My Fines
+            </a>
             <a href="#subscriptions" class="nav-link ${activePath === 'subscriptions' ? 'active' : ''}">
                 <span class="nav-icon">💳</span> Subscriptions
             </a>
@@ -84,6 +87,9 @@ const app = {
                 </a>
                 <a href="#admin-loans" class="nav-link ${activePath === 'admin-loans' ? 'active' : ''}">
                     <span class="nav-icon">📋</span> Loan Records
+                </a>
+                <a href="#admin-fines" class="nav-link ${activePath === 'admin-fines' ? 'active' : ''}">
+                    <span class="nav-icon">⚖️</span> Fine Records
                 </a>
                 <a href="#admin-genres" class="nav-link ${activePath === 'admin-genres' ? 'active' : ''}">
                     <span class="nav-icon">🏷️</span> Genres
@@ -128,11 +134,13 @@ const app = {
         router.register('books', (p) => books.renderList(p));
         router.register('book-detail', (p) => books.renderDetail(p));
         router.register('loans', (p) => loans.renderMyLoans(p));
+        router.register('fines', (p) => fines.renderMyFines(p));
         router.register('subscriptions', () => subscriptions.render());
 
         // Admin Routes
         router.register('admin-books', () => admin.renderBooks(), { adminOnly: true });
         router.register('admin-loans', (p) => admin.renderLoans(p), { adminOnly: true });
+        router.register('admin-fines', (p) => admin.renderFines(p), { adminOnly: true });
         router.register('admin-genres', () => admin.renderGenres(), { adminOnly: true });
         router.register('admin-plans', () => admin.renderPlans(), { adminOnly: true });
         router.register('admin-subscriptions', () => admin.renderSubscriptions(), { adminOnly: true });

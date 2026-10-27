@@ -39,8 +39,21 @@ const loans = {
             <!-- Pagination -->
             <div id="loans-pagination" class="pagination"></div>
 
-            <!-- Future Fine System Notice -->
-            ${utils.renderFutureFeatureNote('Automated Fine Calculation & Fine Payment Gateways')}
+            <!-- Fines Quick Banner -->
+            <div class="card mt-4" style="background: #f8fafc; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.85rem;">
+                        <span style="font-size: 2rem;">💸</span>
+                        <div>
+                            <strong style="font-size: 1rem; color: var(--text-primary);">Library Fine & Penalty Policy</strong>
+                            <p class="text-sm text-muted" style="margin-top: 0.2rem;">
+                                Overdue, damaged, or lost books are tracked in the Fine Service. You can review and settle fees online anytime.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="#fines" class="btn btn-outline btn-sm">Go to My Fines &raquo;</a>
+                </div>
+            </div>
         `;
 
         this.loadLoans();
@@ -135,6 +148,9 @@ const loans = {
                                                 ` : `
                                                     <span class="text-muted text-sm">Closed</span>
                                                 `}
+                                                ${loan.isOverdue || loan.status === 'OVERDUE' || loan.status === 'DAMAGED' || loan.status === 'LOST' ? `
+                                                    <a href="#fines" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" title="Check associated fines">💸 Fines</a>
+                                                ` : ''}
                                             </div>
                                         </td>
                                     </tr>

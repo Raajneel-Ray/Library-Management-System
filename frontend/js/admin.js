@@ -494,10 +494,13 @@ const admin = {
                                     </td>
                                     <td>${utils.renderLoanStatusBadge(loan.status)}</td>
                                     <td>
-                                        ${loan.status === 'CHECKED_OUT' || loan.status === 'OVERDUE' ? `
-                                            <button class="btn btn-success btn-sm" onclick="loans.openCheckinModal(${loan.id}, '${utils.escapeHtml(loan.bookTitle ? loan.bookTitle.replace(/'/g, "\\'") : '')}')">Check In</button>
-                                            <button class="btn btn-outline btn-sm" onclick="loans.openRenewModal(${loan.id}, '${utils.escapeHtml(loan.bookTitle ? loan.bookTitle.replace(/'/g, "\\'") : '')}')">Renew</button>
-                                        ` : '<span class="text-muted text-sm">-</span>'}
+                                        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                                            ${loan.status === 'CHECKED_OUT' || loan.status === 'OVERDUE' ? `
+                                                <button class="btn btn-success btn-sm" onclick="loans.openCheckinModal(${loan.id}, '${utils.escapeHtml(loan.bookTitle ? loan.bookTitle.replace(/'/g, "\\'") : '')}')">Check In</button>
+                                                <button class="btn btn-outline btn-sm" onclick="loans.openRenewModal(${loan.id}, '${utils.escapeHtml(loan.bookTitle ? loan.bookTitle.replace(/'/g, "\\'") : '')}')">Renew</button>
+                                            ` : ''}
+                                            <button class="btn btn-outline btn-sm" title="Assess Fine or Penalty" onclick="admin.openCreateFineModal(${loan.id})">⚖️ Fine</button>
+                                        </div>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1405,5 +1408,588 @@ const admin = {
                 paymentsContainer.innerHTML = `<div class="card text-center"><p class="text-danger">Failed to load payments: ${utils.escapeHtml(e.message)}</p></div>`;
             }
         }
+    },
+
+    // -------------------------------------------------------------
+    // 8. Fine & Penalty Management
+    // -------------------------------------------------------------
+    adminFinesState: {
+        page: 0,
+        size: 15,
+        status: '',
+        type: '',
+        userId: '',
+        cachedList: []
+    },
+
+    async renderFines(params = {}) {
+        const container = document.getElementById('app-content');
+        if (!container) return;
+
+        if (params.page !== undefined) this.adminFinesState.page = parseInt(params.page);
+        if (params.status !== undefined) this.adminFinesState.status = params.status;
+        if (params.type !== undefined) this.adminFinesState.type = params.type;
+        if (params.userId !== undefined) this.adminFinesState.userId = params.userId;
+
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Fine & Penalty Records</h1>
+                    <p class="page-subtitle">Assess fines, process payments, waive fees, and audit member penalties</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="admin.openCreateFineModal()">+ Issue New Fine</button>
+                    <button class="btn btn-outline" onclick="admin.renderFines()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-bar" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+                <div class="form-group" style="margin: 0; min-width: 140px;">
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase;">Status</label>
+                    <select id="admin-fine-filter-status" class="form-control" style="padding: 0.45rem 0.65rem;">
+                        <option value="" ${this.adminFinesState.status === '' ? 'selected' : ''}>All Statuses</option>
+                        <option value="PENDING" ${this.adminFinesState.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                        <option value="PARTIALLY_PAID" ${this.adminFinesState.status === 'PARTIALLY_PAID' ? 'selected' : ''}>Partially Paid</option>
+                        <option value="PAID" ${this.adminFinesState.status === 'PAID' ? 'selected' : ''}>Paid</option>
+                        <option value="WAIVED" ${this.adminFinesState.status === 'WAIVED' ? 'selected' : ''}>Waived</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin: 0; min-width: 140px;">
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase;">Type</label>
+                    <select id="admin-fine-filter-type" class="form-control" style="padding: 0.45rem 0.65rem;">
+                        <option value="" ${this.adminFinesState.type === '' ? 'selected' : ''}>All Types</option>
+                        <option value="OVERDUE" ${this.adminFinesState.type === 'OVERDUE' ? 'selected' : ''}>Overdue</option>
+                        <option value="DAMAGE" ${this.adminFinesState.type === 'DAMAGE' ? 'selected' : ''}>Damage</option>
+                        <option value="LOSS" ${this.adminFinesState.type === 'LOSS' ? 'selected' : ''}>Lost Book</option>
+                        <option value="PROCESSING" ${this.adminFinesState.type === 'PROCESSING' ? 'selected' : ''}>Processing</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin: 0; min-width: 120px;">
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase;">User ID</label>
+                    <input type="number" id="admin-fine-filter-user-id" class="form-control" placeholder="User ID" value="${this.adminFinesState.userId || ''}" style="padding: 0.45rem 0.65rem;" />
+                </div>
+
+                <div style="display: flex; gap: 0.35rem;">
+                    <button class="btn btn-primary btn-sm" style="padding: 0.55rem 1rem;" onclick="admin.applyFineFilters()">Filter</button>
+                    <button class="btn btn-outline btn-sm" style="padding: 0.55rem 0.75rem;" onclick="admin.resetFineFilters()">Reset</button>
+                </div>
+            </div>
+
+            <!-- Fines Table Container -->
+            <div id="admin-fines-table-container">
+                <div class="spinner" style="margin: 3rem auto;"></div>
+            </div>
+
+            <!-- Pagination Container -->
+            <div id="admin-fines-pagination" class="pagination"></div>
+        `;
+
+        this.loadFinesTable();
+    },
+
+    applyFineFilters() {
+        const statusEl = document.getElementById('admin-fine-filter-status');
+        const typeEl = document.getElementById('admin-fine-filter-type');
+        const userEl = document.getElementById('admin-fine-filter-user-id');
+
+        this.adminFinesState.status = statusEl ? statusEl.value : '';
+        this.adminFinesState.type = typeEl ? typeEl.value : '';
+        this.adminFinesState.userId = userEl && userEl.value.trim() ? userEl.value.trim() : '';
+        this.adminFinesState.page = 0;
+
+        this.loadFinesTable();
+    },
+
+    resetFineFilters() {
+        this.adminFinesState.status = '';
+        this.adminFinesState.type = '';
+        this.adminFinesState.userId = '';
+        this.adminFinesState.page = 0;
+
+        const statusEl = document.getElementById('admin-fine-filter-status');
+        const typeEl = document.getElementById('admin-fine-filter-type');
+        const userEl = document.getElementById('admin-fine-filter-user-id');
+        if (statusEl) statusEl.value = '';
+        if (typeEl) typeEl.value = '';
+        if (userEl) userEl.value = '';
+
+        this.loadFinesTable();
+    },
+
+    async loadFinesTable() {
+        const tableContainer = document.getElementById('admin-fines-table-container');
+        const paginationContainer = document.getElementById('admin-fines-pagination');
+        if (!tableContainer) return;
+
+        tableContainer.innerHTML = '<div class="spinner" style="margin: 3rem auto;"></div>';
+
+        try {
+            const pageData = await api.fines.getAll({
+                page: this.adminFinesState.page,
+                size: this.adminFinesState.size,
+                status: this.adminFinesState.status || undefined,
+                type: this.adminFinesState.type || undefined,
+                userId: this.adminFinesState.userId ? parseInt(this.adminFinesState.userId) : undefined
+            });
+
+            const list = pageData.content || [];
+            this.adminFinesState.cachedList = list;
+
+            if (list.length === 0) {
+                tableContainer.innerHTML = `
+                    <div class="card text-center" style="padding: 3rem 1.5rem;">
+                        <span style="font-size: 2.5rem;">⚖️</span>
+                        <h3 class="mt-2">No fine records found</h3>
+                        <p class="text-muted text-sm mt-1">Try adjusting your filters or issue a new fine.</p>
+                        <button class="btn btn-primary btn-sm mt-3" onclick="admin.openCreateFineModal()">+ Issue Fine</button>
+                    </div>
+                `;
+                if (paginationContainer) paginationContainer.innerHTML = '';
+                return;
+            }
+
+            tableContainer.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fine ID</th>
+                                <th>Member</th>
+                                <th>Loan / Book Info</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Outstanding</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${list.map(f => {
+                                const isPending = f.status === 'PENDING' || f.status === 'PARTIALLY_PAID';
+
+                                return `
+                                    <tr>
+                                        <td><strong>#${f.id}</strong></td>
+                                        <td>
+                                            <strong>${utils.escapeHtml(f.userName || 'User #' + f.userId)}</strong>
+                                            <div class="text-muted text-sm">${utils.escapeHtml(f.userEmail || '')}</div>
+                                            <div class="text-muted text-sm" style="font-size: 0.75rem;">User ID: #${f.userId}</div>
+                                        </td>
+                                        <td>
+                                            <strong>${utils.escapeHtml(f.bookTitle || 'Book Loan #' + f.bookLoanId)}</strong>
+                                            ${f.bookIsbn ? `<div class="text-muted text-sm">ISBN: <code>${utils.escapeHtml(f.bookIsbn)}</code></div>` : ''}
+                                            <div class="text-muted text-sm" style="font-size: 0.75rem;">Loan ID: #${f.bookLoanId}</div>
+                                        </td>
+                                        <td>
+                                            ${utils.renderFineTypeBadge(f.type)}
+                                            ${f.reason ? `<div class="text-muted text-sm" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${utils.escapeHtml(f.reason)}">${utils.escapeHtml(f.reason)}</div>` : ''}
+                                        </td>
+                                        <td><strong>${utils.formatCurrency(f.amount)}</strong></td>
+                                        <td>
+                                            ${f.amountOutstanding !== undefined && f.amountOutstanding !== null
+                                                ? (f.amountOutstanding > 0 
+                                                    ? `<span style="color: var(--danger); font-weight: 700;">${utils.formatCurrency(f.amountOutstanding)}</span>` 
+                                                    : `<span style="color: var(--success); font-weight: 600;">₹0.00</span>`)
+                                                : (isPending ? `<span style="color: var(--danger); font-weight: 700;">${utils.formatCurrency(f.amount)}</span>` : '₹0.00')}
+                                        </td>
+                                        <td>${utils.renderFineStatusBadge(f.status)}</td>
+                                        <td>${utils.formatDateTime(f.createdAt)}</td>
+                                        <td>
+                                            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                                                <button class="btn btn-outline btn-sm" onclick="admin.openFineDetailsModal(${f.id})">Details</button>
+                                                ${isPending ? `
+                                                    <button class="btn btn-success btn-sm" title="Mark Paid / Settle" onclick="admin.openMarkFinePaidModal(${f.id})">✓ Settle</button>
+                                                    <button class="btn btn-outline btn-sm" style="color: var(--warning); border-color: var(--warning);" title="Waive this penalty" onclick="admin.openWaiveFineModal(${f.id})">Waive</button>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Render Pagination
+            if (paginationContainer) {
+                const totalPages = pageData.totalPages || 1;
+                const currentPage = pageData.pageNumber || 0;
+
+                if (totalPages > 1) {
+                    let pagHtml = `
+                        <button class="btn btn-outline btn-sm" ${pageData.first ? 'disabled' : ''} onclick="admin.changeFinePage(${currentPage - 1})">
+                            &laquo; Prev
+                        </button>
+                        <span class="text-sm text-muted" style="margin: 0 0.5rem;">
+                            Page <strong>${currentPage + 1}</strong> of <strong>${totalPages}</strong> (${pageData.totalElements} records)
+                        </span>
+                        <button class="btn btn-outline btn-sm" ${pageData.last ? 'disabled' : ''} onclick="admin.changeFinePage(${currentPage + 1})">
+                            Next &raquo;
+                        </button>
+                    `;
+                    paginationContainer.innerHTML = pagHtml;
+                } else {
+                    paginationContainer.innerHTML = `<span class="text-sm text-muted">Showing ${pageData.totalElements} fine records</span>`;
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load admin fines:', err);
+            tableContainer.innerHTML = `
+                <div class="card text-center" style="padding: 2.5rem;">
+                    <p class="text-danger">Failed to load fine records: ${utils.escapeHtml(err.message || 'Server error')}</p>
+                    <button class="btn btn-outline btn-sm mt-2" onclick="admin.loadFinesTable()">Try Again</button>
+                </div>
+            `;
+        }
+    },
+
+    changeFinePage(newPage) {
+        if (newPage < 0) return;
+        this.adminFinesState.page = newPage;
+        this.loadFinesTable();
+    },
+
+    openCreateFineModal(prefillLoanId = null) {
+        utils.showModal({
+            title: 'Issue New Fine / Penalty',
+            bodyHtml: `
+                <form id="create-fine-form" onsubmit="event.preventDefault(); admin.submitCreateFine();">
+                    <div class="form-group">
+                        <label class="form-label" for="fine-book-loan-id">Book Loan ID <span style="color: red;">*</span></label>
+                        <input type="number" id="fine-book-loan-id" class="form-control" placeholder="e.g. 101" value="${prefillLoanId || ''}" required />
+                        <small class="text-muted">The active or returned loan record to assess the penalty against</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="fine-type">Penalty Type <span style="color: red;">*</span></label>
+                            <select id="fine-type" class="form-control" required>
+                                <option value="OVERDUE">OVERDUE - Late return penalty</option>
+                                <option value="DAMAGE">DAMAGE - Book damaged condition</option>
+                                <option value="LOSS">LOSS - Book reported lost</option>
+                                <option value="PROCESSING">PROCESSING - Administrative fee</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="fine-amount">Fine Amount (₹) <span style="color: red;">*</span></label>
+                            <input type="number" id="fine-amount" class="form-control" min="1" step="1" placeholder="e.g. 50" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fine-reason">Reason for Fine <span style="color: red;">*</span></label>
+                        <input type="text" id="fine-reason" class="form-control" placeholder="e.g. 5 days overdue, cover torn, missing pages" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fine-notes">Staff Notes (Optional)</label>
+                        <textarea id="fine-notes" class="form-control" rows="2" placeholder="Internal remarks or inspection comments..."></textarea>
+                    </div>
+
+                    <div id="create-fine-error" class="text-danger text-sm mb-2" style="display: none;"></div>
+                </form>
+            `,
+            footerHtml: `
+                <button type="button" class="btn btn-outline" onclick="utils.closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-submit-fine" onclick="admin.submitCreateFine()">Issue Fine</button>
+            `
+        });
+    },
+
+    async submitCreateFine() {
+        const loanIdInput = document.getElementById('fine-book-loan-id');
+        const typeInput = document.getElementById('fine-type');
+        const amountInput = document.getElementById('fine-amount');
+        const reasonInput = document.getElementById('fine-reason');
+        const notesInput = document.getElementById('fine-notes');
+        const errorEl = document.getElementById('create-fine-error');
+        const submitBtn = document.getElementById('btn-submit-fine');
+
+        const bookLoanId = loanIdInput ? parseInt(loanIdInput.value) : null;
+        const type = typeInput ? typeInput.value : '';
+        const amount = amountInput ? parseInt(amountInput.value) : null;
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        const notes = notesInput ? notesInput.value.trim() : '';
+
+        if (!bookLoanId || isNaN(bookLoanId)) {
+            if (errorEl) { errorEl.textContent = 'Please enter a valid Book Loan ID.'; errorEl.style.display = 'block'; }
+            return;
+        }
+        if (!amount || amount <= 0) {
+            if (errorEl) { errorEl.textContent = 'Amount must be greater than zero.'; errorEl.style.display = 'block'; }
+            return;
+        }
+        if (!reason) {
+            if (errorEl) { errorEl.textContent = 'Please specify a reason for this fine.'; errorEl.style.display = 'block'; }
+            return;
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Issuing...';
+        }
+
+        try {
+            const created = await api.fines.create({
+                bookLoanId,
+                type,
+                amount,
+                reason,
+                notes: notes || undefined
+            });
+
+            utils.closeModal();
+            utils.toast(`Fine #${created.id} issued successfully for ₹${created.amount}!`, 'success');
+            admin.loadFinesTable();
+        } catch (err) {
+            console.error('Failed to issue fine:', err);
+            if (errorEl) {
+                errorEl.textContent = err.message || 'Failed to issue fine.';
+                errorEl.style.display = 'block';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Issue Fine';
+            }
+        }
+    },
+
+    openWaiveFineModal(fineId) {
+        const fine = this.adminFinesState.cachedList.find(f => f.id === fineId);
+        const amount = fine ? fine.amount : '';
+        const userName = fine ? fine.userName : '';
+
+        utils.showModal({
+            title: `Waive Fine #${fineId}`,
+            bodyHtml: `
+                <div style="padding: 0.5rem 0;">
+                    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 1rem;">
+                        <p style="font-size: 0.875rem; color: #92400e; margin: 0; line-height: 1.4;">
+                            ⚠️ You are about to waive penalty <strong>#${fineId}</strong> ${amount ? `(₹${amount})` : ''} for <strong>${utils.escapeHtml(userName)}</strong>. This will set the outstanding balance to ₹0.00 and cannot be undone.
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="waive-reason-input">Reason for Waiver <span style="color: red;">*</span></label>
+                        <textarea id="waive-reason-input" class="form-control" rows="3" placeholder="e.g. Approved medical excuse, first-time student waiver, library administrative error..." required></textarea>
+                        <small class="text-muted">A clear justification is required for auditing and compliance.</small>
+                    </div>
+
+                    <div id="waive-fine-error" class="text-danger text-sm mb-2" style="display: none;"></div>
+                </div>
+            `,
+            footerHtml: `
+                <button type="button" class="btn btn-outline" onclick="utils.closeModal()">Cancel</button>
+                <button type="button" class="btn btn-warning" id="btn-submit-waive" onclick="admin.submitWaiveFine(${fineId})">Confirm Waiver</button>
+            `
+        });
+    },
+
+    async submitWaiveFine(fineId) {
+        const input = document.getElementById('waive-reason-input');
+        const reason = input ? input.value.trim() : '';
+        const errorEl = document.getElementById('waive-fine-error');
+        const submitBtn = document.getElementById('btn-submit-waive');
+
+        if (!reason) {
+            if (errorEl) {
+                errorEl.textContent = 'Please provide a reason for waiving this fine.';
+                errorEl.style.display = 'block';
+            }
+            if (input) input.focus();
+            return;
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Waiving...';
+        }
+
+        try {
+            await api.fines.waive({
+                fineId: fineId,
+                reason: reason
+            });
+
+            utils.closeModal();
+            utils.toast(`Fine #${fineId} has been successfully waived!`, 'success');
+            admin.loadFinesTable();
+        } catch (err) {
+            console.error('Failed to waive fine:', err);
+            if (errorEl) {
+                errorEl.textContent = err.message || 'Failed to waive fine.';
+                errorEl.style.display = 'block';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Confirm Waiver';
+            }
+        }
+    },
+
+    openMarkFinePaidModal(fineId) {
+        const fine = this.adminFinesState.cachedList.find(f => f.id === fineId);
+        const amount = fine ? (fine.amountOutstanding || fine.amount) : 0;
+        const userName = fine ? fine.userName : '';
+
+        utils.showModal({
+            title: `Settle Fine #${fineId}`,
+            bodyHtml: `
+                <div style="padding: 0.5rem 0;">
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span style="font-size: 0.875rem; color: #166534;">Member: <strong>${utils.escapeHtml(userName)}</strong></span>
+                            <span style="font-size: 1.15rem; font-weight: 700; color: #15803d;">${utils.formatCurrency(amount)}</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="admin-settle-txn-id">Payment Reference / Receipt ID</label>
+                        <input type="text" id="admin-settle-txn-id" class="form-control" placeholder="e.g. CASH-DESK-${fineId} or UPI/0987654321" />
+                        <small class="text-muted">Enter cash receipt number, POS terminal auth code, or UPI reference.</small>
+                    </div>
+
+                    <div id="settle-fine-error" class="text-danger text-sm mb-2" style="display: none;"></div>
+                </div>
+            `,
+            footerHtml: `
+                <button type="button" class="btn btn-outline" onclick="utils.closeModal()">Cancel</button>
+                <button type="button" class="btn btn-success" id="btn-submit-settle" onclick="admin.submitMarkFinePaid(${fineId})">Mark as Paid</button>
+            `
+        });
+    },
+
+    async submitMarkFinePaid(fineId) {
+        const input = document.getElementById('admin-settle-txn-id');
+        const txnId = input && input.value.trim() ? input.value.trim() : `DESK-CASH-${Date.now()}`;
+        const errorEl = document.getElementById('settle-fine-error');
+        const submitBtn = document.getElementById('btn-submit-settle');
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+        }
+
+        try {
+            const res = await api.fines.pay(fineId, txnId);
+            utils.closeModal();
+            utils.toast(res.message || `Fine #${fineId} marked as paid successfully!`, 'success');
+            admin.loadFinesTable();
+        } catch (err) {
+            console.error('Failed to mark fine paid:', err);
+            if (errorEl) {
+                errorEl.textContent = err.message || 'Failed to record payment.';
+                errorEl.style.display = 'block';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Mark as Paid';
+            }
+        }
+    },
+
+    openFineDetailsModal(fineId) {
+        const fine = this.adminFinesState.cachedList.find(f => f.id === fineId);
+        if (!fine) return;
+
+        utils.showModal({
+            title: `Audit Details: Fine #${fine.id}`,
+            bodyHtml: `
+                <div style="display: flex; flex-direction: column; gap: 1rem; padding: 0.5rem 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <span style="font-size: 1.15rem; font-weight: 700;">Penalty Record #${fine.id}</span>
+                        <div>
+                            ${utils.renderFineTypeBadge(fine.type)}
+                            ${utils.renderFineStatusBadge(fine.status)}
+                        </div>
+                    </div>
+
+                    <!-- Member & Loan Box -->
+                    <div class="card" style="background: var(--bg-main); border: 1px solid var(--border); margin: 0; padding: 1rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; font-size: 0.875rem;">
+                            <div>
+                                <span class="text-muted">Member Name:</span>
+                                <div><strong>${utils.escapeHtml(fine.userName || '-')}</strong></div>
+                            </div>
+                            <div>
+                                <span class="text-muted">Email & ID:</span>
+                                <div>${utils.escapeHtml(fine.userEmail || '-')} (User #${fine.userId})</div>
+                            </div>
+                            <div>
+                                <span class="text-muted">Associated Book:</span>
+                                <div><strong>${utils.escapeHtml(fine.bookTitle || '-')}</strong></div>
+                            </div>
+                            <div>
+                                <span class="text-muted">ISBN & Loan ID:</span>
+                                <div><code>${utils.escapeHtml(fine.bookIsbn || '-')}</code> (Loan #${fine.bookLoanId || '-'})</div>
+                            </div>
+                            <div>
+                                <span class="text-muted">Total Assessed:</span>
+                                <div><strong style="font-size: 1.1rem; color: var(--primary);">${utils.formatCurrency(fine.amount)}</strong></div>
+                            </div>
+                            <div>
+                                <span class="text-muted">Balance Due:</span>
+                                <div><strong style="font-size: 1.1rem; color: ${fine.status === 'PAID' || fine.status === 'WAIVED' ? 'var(--success)' : 'var(--danger)'};">${utils.formatCurrency(fine.amountOutstanding || 0)}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${fine.reason ? `
+                        <div>
+                            <strong style="font-size: 0.85rem; color: var(--text-secondary);">Reason for Fine:</strong>
+                            <p style="background: #f8fafc; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 0.25rem; font-size: 0.875rem;">
+                                ${utils.escapeHtml(fine.reason)}
+                            </p>
+                        </div>
+                    ` : ''}
+
+                    ${fine.notes ? `
+                        <div>
+                            <strong style="font-size: 0.85rem; color: var(--text-secondary);">Staff / Inspection Notes:</strong>
+                            <p style="background: #f8fafc; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 0.25rem; font-size: 0.875rem;">
+                                ${utils.escapeHtml(fine.notes)}
+                            </p>
+                        </div>
+                    ` : ''}
+
+                    <!-- Audit Trail Timestamps -->
+                    <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.825rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem;">
+                        <div>Created At: <strong>${utils.formatDateTime(fine.createdAt)}</strong></div>
+                        <div>Last Updated: <strong>${utils.formatDateTime(fine.updatedAt)}</strong></div>
+                        ${fine.processByUserName ? `<div>Processed By: <strong>${utils.escapeHtml(fine.processByUserName)}</strong></div>` : ''}
+                    </div>
+
+                    ${fine.status === 'PAID' ? `
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.85rem; color: #15803d;">
+                            <strong>Payment Settlement Details:</strong>
+                            <div style="margin-top: 0.35rem;">Settled At: <strong>${utils.formatDateTime(fine.paidAt)}</strong></div>
+                            <div style="margin-top: 0.25rem;">Transaction Ref: <code>${utils.escapeHtml(fine.transactionId || 'Direct Payment')}</code></div>
+                        </div>
+                    ` : ''}
+
+                    ${fine.status === 'WAIVED' ? `
+                        <div style="background: #f1f5f9; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.85rem; color: var(--text-secondary);">
+                            <strong style="color: var(--text-primary);">Waiver Details:</strong>
+                            <div style="margin-top: 0.35rem;">Waived At: <strong>${utils.formatDateTime(fine.waivedAt)}</strong></div>
+                            ${fine.waivedByUserName ? `<div>Waived By: <strong>${utils.escapeHtml(fine.waivedByUserName)}</strong></div>` : ''}
+                            <div style="margin-top: 0.25rem;">Waiver Justification: <em style="color: var(--text-primary);">"${utils.escapeHtml(fine.waiverReason || 'No reason specified')}"</em></div>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            footerHtml: `
+                <button type="button" class="btn btn-outline" onclick="utils.closeModal()">Close</button>
+                ${fine.status === 'PENDING' || fine.status === 'PARTIALLY_PAID' ? `
+                    <button type="button" class="btn btn-warning" onclick="admin.openWaiveFineModal(${fine.id})">Waive Fine</button>
+                    <button type="button" class="btn btn-success" onclick="admin.openMarkFinePaidModal(${fine.id})">Settle Payment</button>
+                ` : ''}
+            `
+        });
     }
 };
