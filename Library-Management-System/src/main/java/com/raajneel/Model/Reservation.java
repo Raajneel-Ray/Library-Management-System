@@ -2,10 +2,7 @@ package com.raajneel.Model;
 
 import com.raajneel.Domain.ReservationStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,7 +10,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reservation")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -22,14 +20,18 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    private ReservationStatus status=ReservationStatus.PENDING;
+    @Column(nullable = false, length = 20)
+    private ReservationStatus status = ReservationStatus.PENDING;
 
     private LocalDateTime reservedAt;
 
@@ -37,7 +39,7 @@ public class Reservation {
 
     private LocalDateTime availableUntil;
 
-    @Column(name ="fulfilled_at")
+    @Column(name = "fulfilled_at")
     private LocalDateTime fulfilledAt;
 
     @Column(name = "cancelled_at")
@@ -46,24 +48,36 @@ public class Reservation {
     @Column(name = "queue_position")
     private Integer queuePosition;
 
-    @Column(name ="notification_sent", nullable = false)
-    private Boolean notificationSend=false;
+    @Builder.Default
+    @Column(name = "notification_sent", nullable = false)
+    private Boolean notificationSend = false;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false,updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public boolean canBeCancelled(){
-        return status==ReservationStatus.PENDING || status == ReservationStatus.AVAILABLE;
+    // Alias getters/setters for notificationSent to maintain backwards compatibility
+    public Boolean getNotificationSent() {
+        return notificationSend;
     }
 
-    public  boolean hasExpired(){
-        return status==ReservationStatus.AVAILABLE && availableUntil != null && LocalDateTime.now().isAfter(availableUntil);
+    public void setNotificationSent(Boolean notificationSent) {
+        this.notificationSend = notificationSent;
+    }
+
+    public boolean canBeCancelled() {
+        return (status == ReservationStatus.PENDING || status == ReservationStatus.AVAILABLE) && !hasExpired();
+    }
+
+    public boolean hasExpired() {
+        return status == ReservationStatus.EXPIRED
+                || (status == ReservationStatus.AVAILABLE && availableUntil != null && LocalDateTime.now().isAfter(availableUntil));
     }
 }

@@ -42,6 +42,18 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse(e.getMessage(), false));
     }
 
+    @ExceptionHandler(BookReviewException.class)
+    public ResponseEntity<ApiResponse> handleBookReviewException(BookReviewException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(e.getMessage(), false));
+    }
+
+    @ExceptionHandler(WishListException.class)
+    public ResponseEntity<ApiResponse> handleWishListException(WishListException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(e.getMessage(), false));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse> handleBadCredentialsException(BadCredentialsException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
