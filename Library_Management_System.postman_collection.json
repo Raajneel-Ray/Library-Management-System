@@ -1,0 +1,2755 @@
+{
+  "info": {
+    "_postman_id": "f186ef82-8f56-4613-98df-90310c8c5049",
+    "name": "Library Management System API",
+    "description": "# Library Management System API (OpenAPI 3 / SpringDoc)\n\nComprehensive RESTful API for modern library operations, including:\n* **Authentication**: Registration, JWT login, and password recovery.\n* **Book Catalog**: Catalog browsing, ISBN lookups, and inventory statistics.\n* **Book Administration**: Admin catalog ingestion, bulk imports, updates, and hard deletion.\n* **Circulation & Loans**: Borrowing, checking in, renewals, overdue tracking.\n* **Book Reviews**: 1-5 star ratings, textual critiques, and book average metrics.\n* **Fines & Penalties**: Overdue fine assessment, waiver authorization, and payment orders.\n* **Genres**: Hierarchical category taxonomy and catalog indexing.\n* **Payments**: Razorpay and Stripe gateway checkout initiation, signature verification, and cancellation.\n* **Reservations**: Hold queue management, automatic notifications, and loan fulfillment.\n* **Subscriptions & Plans**: Tiered memberships, borrowing limits, automated expiration, and renewals.\n* **Users & Profiles**: User directory listings and authenticated profile management.\n* **Wishlists**: Patron reading wishlists and personal book hold planning.\n\n### Authentication\nAll secured endpoints expect the JWT bearer token in the `Authorization` header:\n```\nAuthorization: Bearer {{token}}\n```\nUse the **Authentication -> Login** request to retrieve your token, which can be stored in the collection variable `token`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "description": "Endpoints for user registration, login credential verification, and password recovery workflows.",
+      "item": [
+        {
+          "name": "User Signup / Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Registers a new patron user in the system with encrypted password credentials and returns a signed JWT access token and user profile.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.johnson@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Alice Johnson\",\n  \"phone\": \"+1-555-019-2834\",\n  \"userName\": \"alice_j\",\n  \"role\": \"ROLE_USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Validates the user's email and password against stored bcrypt hashes and returns an authenticated JWT session token.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.johnson@example.com\",\n  \"password\": \"SecurePass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Generates a secure password reset token associated with the provided email account and dispatches an email containing the reset link.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.johnson@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Validates the one-time password reset token, verifies that it has not expired, and sets the user's password to the new value.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d\",\n  \"newPassword\": \"BrandNewSecurePass456!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Books",
+      "description": "Public and patron-facing endpoints for browsing, searching, and inspecting the book catalog.",
+      "item": [
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Retrieves full bibliographic metadata, copy availability, and loan status indicators for a specific book ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Book by ISBN",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/isbn/:isbn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "isbn",
+                ":isbn"
+              ],
+              "variable": [
+                {
+                  "key": "isbn",
+                  "value": "978-0132350884",
+                  "description": "Path variable: isbn"
+                }
+              ]
+            },
+            "description": "Fetches a book's catalog details using its unique International Standard Book Number (ISBN-10 or ISBN-13)."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Books (Query Parameters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/search?genreId=3&availableOnly=false&activeOnly=true&page=0&size=20&sortBy=createdAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Query param: genreId"
+                },
+                {
+                  "key": "availableOnly",
+                  "value": "false",
+                  "description": "Query param: availableOnly"
+                },
+                {
+                  "key": "activeOnly",
+                  "value": "true",
+                  "description": "Query param: activeOnly"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ]
+            },
+            "description": "Filters book titles by genre, availability status, and active status with configurable pagination and sorting."
+          },
+          "response": []
+        },
+        {
+          "name": "Advanced Book Search (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "search"
+              ]
+            },
+            "description": "Performs an advanced multi-attribute search across book catalog with keyword searchTerm, genreId, availability flags, and pagination.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"searchTerm\": \"Clean Code\",\n  \"genreId\": 3,\n  \"availableOnly\": true,\n  \"page\": 0,\n  \"size\": 20,\n  \"sortBy\": \"createdAt\",\n  \"sortDirection\": \"DESC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Catalog Inventory Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "stats"
+              ]
+            },
+            "description": "Returns summary counts of total active catalog titles and aggregate shelf copies available for circulation."
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Book by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Deactivates a book title in the catalog (sets active = false) so it no longer appears in general searches."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Book Administration",
+      "description": "Privileged administrative endpoints for catalog ingestion, bulk imports, updates, and permanent book deletion.",
+      "item": [
+        {
+          "name": "Create Single Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "books"
+              ]
+            },
+            "description": "Creates a new book record in the catalog. Checks for ISBN uniqueness and validates genre association.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0132350884\",\n  \"title\": \"Clean Code: A Handbook of Agile Software Craftsmanship\",\n  \"author\": \"Robert C. Martin\",\n  \"genreId\": 3,\n  \"publisher\": \"Prentice Hall\",\n  \"publicationDate\": \"2008-08-01\",\n  \"language\": \"English\",\n  \"pages\": 464,\n  \"description\": \"Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.\",\n  \"totalCopies\": 10,\n  \"availableCopies\": 10,\n  \"price\": 39.99,\n  \"coverImageUrl\": \"https://images.example.com/books/cleancode.jpg\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Import Books",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/books/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "books",
+                "bulk"
+              ]
+            },
+            "description": "Accepts a list of book records to create in batch. Validates all records and returns the list of saved books.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"isbn\": \"978-0201633610\",\n    \"title\": \"Design Patterns: Elements of Reusable Object-Oriented Software\",\n    \"author\": \"Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides\",\n    \"genreId\": 3,\n    \"publisher\": \"Addison-Wesley\",\n    \"publicationDate\": \"1994-10-21\",\n    \"language\": \"English\",\n    \"pages\": 395,\n    \"description\": \"Capturing a wealth of experience about the design of object-oriented software.\",\n    \"totalCopies\": 8,\n    \"availableCopies\": 8,\n    \"price\": 49.99,\n    \"coverImageUrl\": \"https://images.example.com/books/designpatterns.jpg\",\n    \"active\": true\n  },\n  {\n    \"isbn\": \"978-0134494166\",\n    \"title\": \"Clean Architecture: A Craftsman's Guide to Software Structure and Design\",\n    \"author\": \"Robert C. Martin\",\n    \"genreId\": 3,\n    \"publisher\": \"Prentice Hall\",\n    \"publicationDate\": \"2017-09-17\",\n    \"language\": \"English\",\n    \"pages\": 432,\n    \"description\": \"Practical software architecture rules and principles from Uncle Bob.\",\n    \"totalCopies\": 6,\n    \"availableCopies\": 6,\n    \"price\": 34.99,\n    \"coverImageUrl\": \"https://images.example.com/books/cleanarch.jpg\",\n    \"active\": true\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Existing Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/books/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "books",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Updates metadata (title, author, copies, genre, description, price) of an existing book by its database ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0132350884\",\n  \"title\": \"Clean Code (Updated Edition)\",\n  \"author\": \"Robert C. Martin\",\n  \"genreId\": 3,\n  \"publisher\": \"Prentice Hall\",\n  \"publicationDate\": \"2008-08-01\",\n  \"language\": \"English\",\n  \"pages\": 464,\n  \"description\": \"Comprehensive guide to writing clean and readable code.\",\n  \"totalCopies\": 12,\n  \"availableCopies\": 9,\n  \"price\": 42.99,\n  \"coverImageUrl\": \"https://images.example.com/books/cleancode.jpg\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Permanently Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/books/:id/permanent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "books",
+                ":id",
+                "permanent"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Permanently removes a book entity from the database. Blocked if the book has historical loan or reservation associations."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Book Loans & Circulation",
+      "description": "Endpoints for borrowing, returning, renewing, and tracking book loan transactions.",
+      "item": [
+        {
+          "name": "Checkout Book (Current User)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "checkout"
+              ]
+            },
+            "description": "Creates an active checkout loan for the authenticated patron. Validates active membership plan, max allowed concurrent loans, overdue debt, and book copy availability.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"checkoutDays\": 14,\n  \"notes\": \"Checked out for university coursework research\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout Book for User (Admin/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/checkout/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "checkout",
+                "user",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Path variable: userId"
+                }
+              ]
+            },
+            "description": "Allows circulation desk staff or administrators to initiate a book checkout on behalf of a designated patron by user ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"checkoutDays\": 21,\n  \"notes\": \"Issued at circulation counter by staff\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Checkin / Return Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/checkin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "checkin"
+              ]
+            },
+            "description": "Records the physical return of a borrowed book. Increments available inventory copies unless reported lost, marks loan as RETURNED, and computes any overdue penalties.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookLoanId\": 101,\n  \"condition\": \"RETURNED\",\n  \"notes\": \"Returned on time, cover clean and bindings intact\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Renew Book Loan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/renew",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "renew"
+              ]
+            },
+            "description": "Extends the due date of an active loan by requested extension days if loan is not overdue and renewalCount has not reached maxRenewals.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookLoanId\": 101,\n  \"extensionDay\": 14,\n  \"notes\": \"Need extra week to finish dissertation chapter\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Book Loans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/mybookloans?status=CHECKED_OUT&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "mybookloans"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "CHECKED_OUT",
+                  "description": "Query param: status"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of book loans associated with the logged-in user, optionally filtered by status (e.g., CHECKED_OUT, OVERDUE, RETURNED)."
+          },
+          "response": []
+        },
+        {
+          "name": "Search All Book Loans (Admin/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "search"
+              ]
+            },
+            "description": "Performs an administrative search across all system book loans with filters for patron ID, book ID, loan status, date range, and overdue flag.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 5,\n  \"bookId\": 1,\n  \"status\": \"CHECKED_OUT\",\n  \"overdueOnly\": false,\n  \"unpaidFinesOnly\": false,\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-31\",\n  \"page\": 0,\n  \"size\": 20,\n  \"sortBy\": \"createdAt\",\n  \"sortDirection\": \"DESC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Overdue Book Loans Batch (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-loans/admin/update-overdue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-loans",
+                "admin",
+                "update-overdue"
+              ]
+            },
+            "description": "Triggers a system-wide reconciliation job that scans active checked-out loans against current date and transitions past-due loans to OVERDUE status with calculated overdueDays."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Book Reviews",
+      "description": "Endpoints for patrons to submit, edit, read, and delete book ratings and written reviews.",
+      "item": [
+        {
+          "name": "Submit Book Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            },
+            "description": "Submits a rating (1-5) and written review text for a book. Each user can review a book at most once.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"rating\": 5,\n  \"reviewText\": \"Extremely well written with practical patterns for writing clean, maintainable software.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Book Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "501",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Updates the rating score or comment text of a previously submitted review. Only the original author or an administrator may update.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"rating\": 4,\n  \"reviewText\": \"Updated review: Still great after a re-read, though some examples are dated.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Book Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "501",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Removes a review from the database. Allowed for the review author or administrators."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Review by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "501",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Retrieves a single review by its primary identifier."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reviews for Book",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/book/:bookId?page=0&size=10&sortBy=createdAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "book",
+                ":bookId"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "bookId",
+                  "value": "1",
+                  "description": "Path variable: bookId"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of reviews submitted for a specific book title with sort options."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Book Review Rating Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/book/:bookId/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "book",
+                ":bookId",
+                "summary"
+              ],
+              "variable": [
+                {
+                  "key": "bookId",
+                  "value": "1",
+                  "description": "Path variable: bookId"
+                }
+              ]
+            },
+            "description": "Computes and returns the overall average star rating score and total count of reviews for a book."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/my?page=0&size=10&sortBy=createdAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ]
+            },
+            "description": "Fetches a paginated history of all book reviews posted by the currently logged-in user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reviews by User ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/user/:userId?page=0&size=10&sortBy=createdAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "user",
+                ":userId"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Path variable: userId"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of reviews written by a specific user identifier."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Fines & Penalties",
+      "description": "Endpoints for managing, calculating, settling, and waiving patron fines and overdue penalties.",
+      "item": [
+        {
+          "name": "Create Fine Assessment (Admin/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fines",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fines"
+              ]
+            },
+            "description": "Creates a new financial penalty associated with a specific book loan (e.g. for damage, loss, or special penalty).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookLoanId\": 101,\n  \"type\": \"DAMAGE\",\n  \"amount\": 2500,\n  \"reason\": \"Water damage on back cover pages 400-450\",\n  \"notes\": \"Assessed during return inspection\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pay Fine via Gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fines/:id/pay?transactionId=TXN_manual_12345",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fines",
+                ":id",
+                "pay"
+              ],
+              "query": [
+                {
+                  "key": "transactionId",
+                  "value": "TXN_manual_12345",
+                  "description": "Query param: transactionId"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "201",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Generates a gateway checkout payment order to settle the outstanding balance of the specified fine ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Waive Fine (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fines/waive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fines",
+                "waive"
+              ]
+            },
+            "description": "Marks an assessed fine as WAIVED, records the waiving administrator ID, timestamp, and justification reason.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fineId\": 201,\n  \"reason\": \"System outage prevented on-time return; verified and approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Fines",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fines/my?status=PENDING&type=OVERDUE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fines",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Query param: status"
+                },
+                {
+                  "key": "type",
+                  "value": "OVERDUE",
+                  "description": "Query param: type"
+                }
+              ]
+            },
+            "description": "Retrieves all fines incurred by the currently logged-in user, optionally filtered by status (PENDING, PAID, WAIVED) or fine type."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Fines (Admin/Staff)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fines?status=PENDING&type=OVERDUE&userId=5&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fines"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Query param: status"
+                },
+                {
+                  "key": "type",
+                  "value": "OVERDUE",
+                  "description": "Query param: type"
+                },
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Query param: userId"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of all system fines with optional filters for fine status, type, and specific user ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Genres & Categories",
+      "description": "Endpoints for managing book subject classifications and genre hierarchy.",
+      "item": [
+        {
+          "name": "Create Genre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                "create"
+              ]
+            },
+            "description": "Creates a new catalog genre with optional parent genre association for sub-categorization.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SCI-FI\",\n  \"name\": \"Science Fiction\",\n  \"description\": \"Speculative fiction dealing with imaginative concepts such as futuristic science and technology.\",\n  \"displayOrder\": 1,\n  \"active\": true,\n  \"parentGenreId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Genres",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres"
+              ]
+            },
+            "description": "Retrieves the full list of active genres including their nested sub-genres."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Genre by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/:genreId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                ":genreId"
+              ],
+              "variable": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Path variable: genreId"
+                }
+              ]
+            },
+            "description": "Retrieves details of a specific genre by its primary numeric identifier."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Genre",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/:genreId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                ":genreId"
+              ],
+              "variable": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Path variable: genreId"
+                }
+              ]
+            },
+            "description": "Modifies genre details such as display name, description, active status, or display order.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SCI-FI-UPDATED\",\n  \"name\": \"Science Fiction & Fantasy\",\n  \"description\": \"Speculative fiction including sci-fi, fantasy, and futuristic narratives.\",\n  \"displayOrder\": 1,\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Genre",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/:genreId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                ":genreId"
+              ],
+              "variable": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Path variable: genreId"
+                }
+              ]
+            },
+            "description": "Marks the genre as inactive (active = false) without removing historical book references."
+          },
+          "response": []
+        },
+        {
+          "name": "Hard Delete Genre (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/:genreId/hard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                ":genreId",
+                "hard"
+              ],
+              "variable": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Path variable: genreId"
+                }
+              ]
+            },
+            "description": "Permanently removes the genre record from the database. Blocked if books or child subgenres are assigned to it."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top-Level Genres",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/top-level",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                "top-level"
+              ]
+            },
+            "description": "Retrieves all root categories that have no parent genre assigned."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Genres Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                "count"
+              ]
+            },
+            "description": "Returns the aggregate total number of active genre categories."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Book Count for Genre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/genres/:genreId/books/count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "genres",
+                ":genreId",
+                "books",
+                "count"
+              ],
+              "variable": [
+                {
+                  "key": "genreId",
+                  "value": "3",
+                  "description": "Path variable: genreId"
+                }
+              ]
+            },
+            "description": "Calculates and returns the total number of books assigned to the specified genre ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Payments & Transactions",
+      "description": "Endpoints for payment gateway signature verification, transaction cancellation, and transaction auditing.",
+      "item": [
+        {
+          "name": "Verify Payment Signature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "verify"
+              ]
+            },
+            "description": "Validates Razorpay or Stripe checkout credentials, confirms fund settlement, updates fine or subscription status, and records the transaction receipt.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayPaymentId\": \"pay_N83kS0v81Lkdfg\",\n  \"stripePaymentIntentId\": \"pi_3MtwBwLkdIwHu7ix28a3tqPa\",\n  \"stripePaymentIntentStatus\": \"succeeded\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Pending Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:paymentId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":paymentId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": "301",
+                  "description": "Path variable: paymentId"
+                }
+              ]
+            },
+            "description": "Cancels a pending payment transaction record and marks its status as CANCELLED."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payment Transactions (Admin/Staff)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments?page=0&size=10&sortBy=createdAt&sortDir=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "DESC",
+                  "description": "Query param: sortDir"
+                }
+              ]
+            },
+            "description": "Retrieves an administrative paginated log of all gateway payments across the system with sorting support."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Reservations & Queue Holds",
+      "description": "Endpoints for reserving currently checked-out books, managing hold queues, and fulfilling holds upon availability.",
+      "item": [
+        {
+          "name": "Create Reservation (Current User)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Places the current authenticated user into the reservation waiting queue for an unavailable book. Checks max active reservation limit (5) and active loan constraints.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"notes\": \"Hold for pickup at East Campus branch\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation for User (Admin/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "user",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Path variable: userId"
+                }
+              ]
+            },
+            "description": "Allows library staff to place a reservation hold for a specified patron ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"notes\": \"Priority hold placed by librarian on patron's request\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Reservation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "401",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Cancels an existing pending or available reservation. Can be triggered by the hold owner or by an administrator."
+          },
+          "response": []
+        },
+        {
+          "name": "Fulfill Reservation (Pickup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/:id/fulfill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                ":id",
+                "fulfill"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "401",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Transitions an available reservation hold into an active checkout loan for the patron when they pick up the book."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Reservations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/my?status=PENDING&activeOnly=true&page=0&size=20&sortBy=reservedAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Query param: status"
+                },
+                {
+                  "key": "activeOnly",
+                  "value": "true",
+                  "description": "Query param: activeOnly"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "reservedAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of reservations placed by the currently logged-in user with filter options."
+          },
+          "response": []
+        },
+        {
+          "name": "Search All Reservations (Admin/Staff)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?userId=5&bookId=1&status=PENDING&activeOnly=true&page=0&size=20&sortBy=reservedAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Query param: userId"
+                },
+                {
+                  "key": "bookId",
+                  "value": "1",
+                  "description": "Query param: bookId"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Query param: status"
+                },
+                {
+                  "key": "activeOnly",
+                  "value": "true",
+                  "description": "Query param: activeOnly"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "reservedAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ]
+            },
+            "description": "Administrative search across all reservations with filters for patron ID, book ID, reservation status, and hold validity."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Subscriptions & Memberships",
+      "description": "Endpoints for purchasing, activating, managing, cancelling, and inspecting library patron subscriptions.",
+      "item": [
+        {
+          "name": "Purchase / Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "subscribe"
+              ]
+            },
+            "description": "Creates a pending subscription for the user and initializes a gateway checkout order returning payment gateway details.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 5,\n  \"planId\": 2,\n  \"autoRenew\": false,\n  \"notes\": \"Student academic subscription enrollment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Subscriptions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "admin"
+              ]
+            },
+            "description": "Retrieves an administrative list of all patron subscriptions across the library system."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Subscription for User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/user/active-subscriptions?userId=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "user",
+                "active-subscriptions"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "description": "Query param: userId"
+                }
+              ]
+            },
+            "description": "Retrieves the currently active, unexpired subscription record for the logged-in user or a specified user ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/cancel/:subscriptionId?reason=Graduating and relocating",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "cancel",
+                ":subscriptionId"
+              ],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "Graduating and relocating",
+                  "description": "Query param: reason"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "subscriptionId",
+                  "value": "12",
+                  "description": "Path variable: subscriptionId"
+                }
+              ]
+            },
+            "description": "Cancels an active subscription membership with an optional recorded justification reason."
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/activate?subscriptionId=12&paymentId=301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "activate"
+              ],
+              "query": [
+                {
+                  "key": "subscriptionId",
+                  "value": "12",
+                  "description": "Query param: subscriptionId"
+                },
+                {
+                  "key": "paymentId",
+                  "value": "301",
+                  "description": "Query param: paymentId"
+                }
+              ]
+            },
+            "description": "Activates a subscription tier following verified completion of the associated payment transaction."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Expired Subscriptions Batch (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/admin/deactivate-expired",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "admin",
+                "deactivate-expired"
+              ]
+            },
+            "description": "Triggers a batch update task that marks all subscriptions past their endDate as isActive = false."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Subscription Plans",
+      "description": "Endpoints for exploring available membership tiers and administrative management of pricing plans.",
+      "item": [
+        {
+          "name": "Get All Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription-plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription-plans"
+              ]
+            },
+            "description": "Retrieves all available subscription plans with pricing, loan limits, and borrowing duration allowances."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Featured Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription-plans/featured",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription-plans",
+                "featured"
+              ]
+            },
+            "description": "Retrieves promotional and highlighted plans (isFeatured = true) for display on the landing page."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subscription Plan (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription-plans/admin/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription-plans",
+                "admin",
+                "create"
+              ]
+            },
+            "description": "Creates a new subscription tier with specified price, duration in days, max books allowed, and loan limits.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planCode\": \"PREM-SCHOLAR\",\n  \"planName\": \"Premium Scholar Plan\",\n  \"description\": \"Ideal for university researchers needing up to 5 concurrent loans for 21 days each.\",\n  \"durationDays\": 30,\n  \"price\": 4999,\n  \"currency\": \"INR\",\n  \"maximumBooksAllowed\": 5,\n  \"maxDaysPerBook\": 21,\n  \"displayOrder\": 2,\n  \"isActive\": true,\n  \"isFeatured\": true,\n  \"badgeText\": \"Most Popular\",\n  \"adminNotes\": \"Targeted for student promotions\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subscription Plan (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription-plans/admin/update/:planId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription-plans",
+                "admin",
+                "update",
+                ":planId"
+              ],
+              "variable": [
+                {
+                  "key": "planId",
+                  "value": "2",
+                  "description": "Path variable: planId"
+                }
+              ]
+            },
+            "description": "Updates pricing, borrowing rules, features, and active status for an existing plan ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planCode\": \"PREM-SCHOLAR\",\n  \"planName\": \"Premium Scholar Plan (Updated)\",\n  \"description\": \"Expanded tier with 7 books allowed for 28 days.\",\n  \"durationDays\": 30,\n  \"price\": 5499,\n  \"currency\": \"INR\",\n  \"maximumBooksAllowed\": 7,\n  \"maxDaysPerBook\": 28,\n  \"displayOrder\": 2,\n  \"isActive\": true,\n  \"isFeatured\": true,\n  \"badgeText\": \"Best Value\",\n  \"adminNotes\": \"Adjusted loan caps based on inventory expansion\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete / Deactivate Plan (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription-plans/admin/delete/:planId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription-plans",
+                "admin",
+                "delete",
+                ":planId"
+              ],
+              "variable": [
+                {
+                  "key": "planId",
+                  "value": "2",
+                  "description": "Path variable: planId"
+                }
+              ]
+            },
+            "description": "Deactivates a subscription plan (sets isActive = false) so new users cannot purchase it."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Users & Profiles",
+      "description": "Endpoints for viewing user directory information and managing patron profile accounts.",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "profile"
+              ]
+            },
+            "description": "Fetches the full profile details of the user identified by the current JWT security authentication context."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users Directory (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "list"
+              ]
+            },
+            "description": "Retrieves a summary list of all registered library patron and administrator user accounts."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13. Wishlist & Reading Lists",
+      "description": "Endpoints for managing saved books in a patron's personal reading wishlist.",
+      "item": [
+        {
+          "name": "Add Book to Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist"
+              ]
+            },
+            "description": "Saves a book to the current authenticated patron's personal wishlist with optional reading notes. Duplicates are rejected.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": 1,\n  \"notes\": \"Recommended by team lead for reading next quarter\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Item from Wishlist by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "601",
+                  "description": "Path variable: id"
+                }
+              ]
+            },
+            "description": "Removes a saved book item from the authenticated patron's wishlist using the wishlist entry ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Book from Wishlist by Book ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/book/:bookId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                "book",
+                ":bookId"
+              ],
+              "variable": [
+                {
+                  "key": "bookId",
+                  "value": "1",
+                  "description": "Path variable: bookId"
+                }
+              ]
+            },
+            "description": "Removes a book from the current patron's wishlist using the target book's identifier."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Wishlist (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/my?page=0&size=20&sortBy=createdAt&sortDirection=DESC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Query param: page"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Query param: size"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Query param: sortBy"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "DESC",
+                  "description": "Query param: sortDirection"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of books in the authenticated user's wishlist, including inventory availability status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Items in My Wishlist (List)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/my/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                "my",
+                "all"
+              ]
+            },
+            "description": "Retrieves the complete unpaged list of all books saved in the patron's wishlist."
+          },
+          "response": []
+        },
+        {
+          "name": "Check if Book in Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/check/:bookId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                "check",
+                ":bookId"
+              ],
+              "variable": [
+                {
+                  "key": "bookId",
+                  "value": "1",
+                  "description": "Path variable: bookId"
+                }
+              ]
+            },
+            "description": "Returns a boolean flag { inWishlist: true|false } indicating whether the target book has already been added to the authenticated patron's wishlist."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Wishlist Items Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wishlist/count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wishlist",
+                "count"
+              ]
+            },
+            "description": "Calculates and returns the aggregate count of wishlist items saved by the currently logged-in user."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
