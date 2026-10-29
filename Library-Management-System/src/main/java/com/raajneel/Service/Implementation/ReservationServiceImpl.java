@@ -1,7 +1,14 @@
 package com.raajneel.Service.Implementation;
 
+import com.raajneel.Domain.BookLoanStatus;
+import com.raajneel.Domain.ReservationStatus;
+import com.raajneel.Domain.UserRole;
 import com.raajneel.Mapper.ReservationMapper;
+import com.raajneel.Model.Book;
+import com.raajneel.Model.Reservation;
+import com.raajneel.Model.User;
 import com.raajneel.Payload.DTO.ReservationDTO;
+import com.raajneel.Payload.Request.CheckoutRequest;
 import com.raajneel.Payload.Request.ReservationRequest;
 import com.raajneel.Payload.Request.ReservationSearchRequest;
 import com.raajneel.Payload.Response.PageResponse;
@@ -12,7 +19,14 @@ import com.raajneel.Service.BookLoanService;
 import com.raajneel.Service.ReservationService;
 import com.raajneel.Service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,32 +43,124 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public ReservationDTO createReservation(ReservationRequest reservationRequest) throws Exception {
-        return null;
+        User user=userService.getCurrentUser();
+        return createReservationForUser(reservationRequest,user.getId());
     }
 
     @Override
     public ReservationDTO createReservationForUser(ReservationRequest reservationRequest, Long userId) throws Exception {
 
-        return null;
-    }
+        boolean alreadyHasLoan=bookLoanRepository.existsByUserIdAndBookIdAndStatus(
+                userId, reservationRequest.getBookId() , BookLoanStatus.CHECKED_OUT
+        );
+        if (alreadyHasLoan){
+            throw new Exception("You already have loan on this book");
+        }
+        User user=userService.getCurrentUser();
+
+        Book book=bookRepository.findById(reservationRequest.getBookId())
+                .orElseThrow(()->new  Exception("Book not Found"));
+        if (reservationRepository.hasActiveReservation(userId,book.getId())){
+            throw  new Exception("You already have active reservation on this book");
+        }
+        if (book.getAvailableCopies()>0){
+            throw new Exception("Book is already available");
+        }
+        long activeReservations=reservationRepository.countActiveReservationsByUser(userId);
+        if (activeReservations>=MAX_RESERVATION){
+            throw new Exception("You have reserved "+ MAX_RESERVATION +"times");
+        }
+        Reservation reservation=new Reservation();
+        reservation.setUser(user);
+        reservation.setBook(book);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setReservedAt(LocalDateTime.now());
+        reservation.setNotificationSend(false);
+        reservation.setNotes(reservationRequest.getNotes());
+
+        long pendingCount=reservationRepository.countPendingReservationsByBook(book.getId());
+        reservation.setQueuePosition((int) pendingCount+1);
+
+        Reservation savedReservation=reservationRepository.save(reservation);
+        return reservationMapper.toDTO(savedReservation);    }
 
     @Override
     public ReservationDTO cancelReservation(Long reservationId) throws Exception {
-        return null;
+        Reservation reservation=reservationRepository.findById(reservationId)
+                .orElseThrow(()->new Exception("Reservation not found with ID: "+reservationId));
+
+        User currentUser=userService.getCurrentUser();
+        if (!reservation.getUser().getId().equals(currentUser.getId()) && currentUser.getRole()!= UserRole.ROLE_ADMIN){
+            throw new Exception("You can only cancel your own reservations");
+        }
+        if (!reservation.canBeCancelled()){
+            throw  new Exception("Reservation cannot be cancelled ( current status: "+ reservation.getStatus() +")");
+        }
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setCancelledAt(LocalDateTime.now());
+
+        Reservation savedReservation=reservationRepository.save(reservation);
+
+        return reservationMapper.toDTO(savedReservation);
     }
 
     @Override
     public ReservationDTO fulfillReservation(Long reservationId) throws Exception {
-        return null;
+        Reservation reservation=reservationRepository.findById(reservationId)
+                .orElseThrow(()->new Exception("Reservation not found with ID : "+reservationId));
+        if (reservation.getBook().getAvailableCopies()<=0){
+            throw new Exception("Reservation  is not available for pickup (current status :"+reservation.getStatus()+")");
+        }
+        reservation.setStatus(ReservationStatus.FULFILLED);
+        reservation.setFulfilledAt(LocalDateTime.now());
+
+        Reservation savedReservation=reservationRepository.save(reservation);
+        CheckoutRequest request=new CheckoutRequest();
+        request.setBookId(reservation.getBook().getId());
+        request.setNotes("Assign Booked by Admin");
+        bookLoanService.checkoutBookForUser(reservation.getUser().getId(),request);
+        return reservationMapper.toDTO(savedReservation);
     }
 
     @Override
     public PageResponse<ReservationDTO> getMyReservations(ReservationSearchRequest searchRequest) throws Exception {
-        return null;
+        User user=userService.getCurrentUser();
+        searchRequest.setUserId(user.getId());
+        return searchReservations(searchRequest);
     }
 
     @Override
     public PageResponse<ReservationDTO> searchReservations(ReservationSearchRequest searchRequest) {
-        return null;
+        Pageable pageable=createPageable(searchRequest);
+        Page<Reservation> reservationPage=reservationRepository.searchReservationsWithFilters(
+                searchRequest.getUserId(),
+                searchRequest.getBookId(),
+                searchRequest.getStatus(),
+                searchRequest.getActiveOnly()!=null ? searchRequest.getActiveOnly() : false,
+                pageable
+        );
+        return builtPageResponse(reservationPage);
+    }
+
+    private  PageResponse<ReservationDTO> builtPageResponse(Page<Reservation> reservationPage){
+        List<ReservationDTO> dtos=reservationPage.getContent().stream()
+                .map(reservationMapper::toDTO)
+                .toList();
+        PageResponse<ReservationDTO> response=new PageResponse<>();
+        response.setContent(dtos);
+        response.setPageNumber(reservationPage.getNumber());
+        response.setPageSize(reservationPage.getSize());
+        response.setTotalElements((int)reservationPage.getTotalElements());
+        response.setTotalPages(reservationPage.getTotalPages());
+        response.setLast(reservationPage.isLast());
+
+        return response;
+    }
+
+    private Pageable createPageable(ReservationSearchRequest searchRequest){
+        Sort sort="ASC".equalsIgnoreCase(searchRequest.getSortDirection())
+                ? Sort.by(searchRequest.getSortBy()).ascending()
+                : Sort.by(searchRequest.getSortBy()).descending();
+        return PageRequest.of(searchRequest.getPage(), searchRequest.getSize());
     }
 }
