@@ -1,68 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Library Management System</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Auth Pages Container -->
-    <div id="auth-container" class="auth-container hidden">
-        <div id="auth-content"></div>
-    </div>
-
-    <!-- Main App Container -->
-    <div id="main-container" class="main-container hidden">
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <span class="sidebar-logo">📚</span>
-                <h2>LibraryMS</h2>
-            </div>
-            <nav id="sidebar-nav" class="sidebar-nav"></nav>
-        </aside>
-
-        <div class="content-wrapper">
-            <header class="topbar">
-                <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">☰</button>
-                <div class="topbar-right">
-                    <span id="user-info" class="user-info"></span>
-                    <button id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
-                </div>
-            </header>
-            <main id="app-content" class="app-content"></main>
-        </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- Modal -->
-    <div id="modal-overlay" class="modal-overlay hidden">
-        <div class="modal-dialog">
-            <div id="modal-content"></div>
-        </div>
-    </div>
-
-    <!-- Razorpay SDK -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
-    <!-- App Scripts (order matters) -->
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/router.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/books.js"></script>
-    <script src="js/loans.js"></script>
-    <script src="js/fines.js"></script>
-    <script src="js/subscriptions.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/app.js"></script>
-</body>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

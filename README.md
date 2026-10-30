@@ -263,3 +263,28 @@ Start the Spring Boot server:
 ```
 
 The application will start on `http://localhost:8080`. You can access the Swagger UI documentation at `http://localhost:8080/swagger-ui/index.html`.
+
+### 4. Run the Frontend (React)
+The frontend is a React + Vite app in the `frontend/` folder. It must run on port **3000** (allowed by the backend's CORS config and used as the Razorpay payment callback URL).
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`. The default admin account is created on first startup by `DataInitializationComponent`.
+
+**Roles in the UI**
+* **User:** browse/search books, view details & reviews, borrow, reserve, wishlist, renew own loans, write reviews, pay fines online, subscribe to a plan, view profile.
+* **Admin:** everything a user can do, plus manage books, genres and subscription plans; view all loans (issue a book to a user, check in, renew, add fines, mark overdue); all reservations (reserve for a user, fulfil, cancel); all fines (mark paid, waive); all subscriptions; payments; and the user list.
+
+**Frontend structure**
+```
+frontend/src/
+├── api.js            # every backend call in one place
+├── AuthContext.jsx   # logged-in user, login/logout, isAdmin
+├── App.jsx           # routes (admin pages wrapped in RequireAdmin)
+├── components/       # Layout (sidebar), Alert, Badge, Modal, Pagination
+└── pages/            # user pages, and pages/admin/ for admin-only pages
+```
